@@ -2682,17 +2682,18 @@ body.no-chrome::before {
 
 .method-brand-logo-wrap {
   display: inline-flex;
-  min-width: 104px;
+  width: 58px;
+  height: 58px;
+  flex-shrink: 0;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .method-brand-logo {
-  width: auto;
-  max-width: min(132px, 34vw);
-  height: 28px;
+  width: 58px;
+  height: 58px;
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
 }
 
 .method-label {

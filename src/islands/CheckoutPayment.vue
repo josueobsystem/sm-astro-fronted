@@ -11,7 +11,8 @@ const props = defineProps<{
   niubizCheckoutUrl: string;
 }>();
 
-const DEFAULT_NIUBIZ_LOGO_PATH = '/niubiz-merchant-logo.png';
+const NIUBIZ_MERCHANT_LOGO_PATH = '/niubiz-merchant-logo.png';
+const CHECKOUT_BRAND_LOGO_PATH = '/checkout-brand-logo.png';
 const DEFAULT_PROCESSING_FEE_LABEL = 'Cargo por procesamiento de pago';
 const DEFAULT_PROCESSING_FEE_RATE_LABEL = '3.45% + IGV';
 const DEFAULT_PROCESSING_FEE_TOTAL_RATE = 0.0345 * 1.18;
@@ -191,7 +192,7 @@ async function startPayment() {
       merchantid: data.merchant_id,
       purchasenumber: data.purchase_number,
       amount: Number(data.amount),
-      merchantlogo: buildFrontendUrl(DEFAULT_NIUBIZ_LOGO_PATH),
+      merchantlogo: buildFrontendUrl(NIUBIZ_MERCHANT_LOGO_PATH),
       merchantname: 'Sonia Morales',
       timeouturl: buildFrontendUrl('/checkout/timeout'),
       action,
@@ -335,7 +336,7 @@ onUnmounted(() => {
             >
               <span class="method-left">
                 <span class="method-brand-logo-wrap">
-                  <img :src="DEFAULT_NIUBIZ_LOGO_PATH" alt="Logo Sonia Morales" class="method-brand-logo" />
+                  <img :src="CHECKOUT_BRAND_LOGO_PATH" alt="Logo Sonia Morales" class="method-brand-logo" />
                 </span>
                 <span class="method-label">Pago online (Tarjetas, Yape y más)</span>
               </span>
