@@ -46,3 +46,4 @@ El `wrangler.jsonc` usa el entrypoint recomendado para Astro 6:
 - `POST /api/orders/checkout/session`
 - `GET /api/orders/checkout/success`
 # sm-astro-fronted
+# sm-astro-fronted
