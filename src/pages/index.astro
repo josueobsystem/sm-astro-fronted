@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '@/layouts/BaseLayout.astro';
-import HomeDynamic from '@/components/HomeDynamic.astro';
+import HomeHero from '@/components/HomeHero.astro';
+import HomeEvents from '@/components/HomeEvents.astro';
 
 const query = Object.fromEntries(Astro.url.searchParams);
 ---
@@ -9,6 +10,16 @@ const query = Object.fromEntries(Astro.url.searchParams);
   title="Sonia Morales - Entradas oficiales"
   description="Compra entradas oficiales para eventos de Sonia Morales."
 >
+  <HomeHero server:defer query={query}>
+    <section slot="fallback" class="section">
+      <div class="shell hero-swiper-shell" aria-hidden="true">
+        <div class="hero-slide-frame">
+          <div class="hero-slide-overlay"></div>
+        </div>
+      </div>
+    </section>
+  </HomeHero>
+
   <section class="section" id="solicitud-evento">
     <div class="shell notice-panel" style="margin-top:0">
       <p class="eyebrow">Eventos privados</p>
@@ -24,13 +35,8 @@ const query = Object.fromEntries(Astro.url.searchParams);
     </div>
   </section>
 
-  <HomeDynamic server:defer query={query}>
+  <HomeEvents server:defer query={query}>
     <section slot="fallback" class="section">
-      <div class="shell hero-swiper-shell" aria-hidden="true">
-        <div class="hero-slide-frame">
-          <div class="hero-slide-overlay"></div>
-        </div>
-      </div>
       <div class="shell" style="padding-top: 24px;">
         <div class="section-heading">
           <div>
@@ -40,5 +46,5 @@ const query = Object.fromEntries(Astro.url.searchParams);
         </div>
       </div>
     </section>
-  </HomeDynamic>
+  </HomeEvents>
 </BaseLayout>

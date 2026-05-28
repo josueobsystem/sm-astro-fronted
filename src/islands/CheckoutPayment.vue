@@ -5,6 +5,7 @@ import type { CheckoutReservation, PublicEvent } from '@/types/api';
 
 const props = defineProps<{
   apiBaseUrl: string;
+  siteUrl: string;
   reservation: CheckoutReservation;
   event: PublicEvent | null;
   niubizCheckoutUrl: string;
@@ -133,6 +134,10 @@ function closeCheckout() {
   window.location.href = '/';
 }
 
+function buildFrontendUrl(path: string): string {
+  return new URL(path, props.siteUrl).toString();
+}
+
 async function startPayment() {
   errorMessage.value = null;
 
@@ -177,7 +182,8 @@ async function startPayment() {
 
     const data = envelope.data;
     const successPath = `/checkout/success?reservation_id=${encodeURIComponent(props.reservation.id)}&purchase_number=${encodeURIComponent(data.purchase_number)}&billing_type=${encodeURIComponent(billingType.value)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}`;
-    const action = `${props.apiBaseUrl}/orders/checkout/confirm?reservation_id=${encodeURIComponent(props.reservation.id)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}&frontend_success_url=${encodeURIComponent(window.location.origin + successPath)}`;
+    const frontendSuccessUrl = buildFrontendUrl(successPath);
+    const action = `${props.apiBaseUrl}/orders/checkout/confirm?reservation_id=${encodeURIComponent(props.reservation.id)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}&frontend_success_url=${encodeURIComponent(frontendSuccessUrl)}`;
 
     window.VisanetCheckout.configure({
       sessiontoken: data.session_token,
@@ -187,7 +193,7 @@ async function startPayment() {
       amount: Number(data.amount),
       merchantlogo: DEFAULT_NIUBIZ_LOGO_URL,
       merchantname: 'Sonia Morales',
-      timeouturl: `${window.location.origin}/checkout/timeout`,
+      timeouturl: buildFrontendUrl('/checkout/timeout'),
       action,
     });
     window.VisanetCheckout.open();

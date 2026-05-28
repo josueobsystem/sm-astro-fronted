@@ -1,0 +1,21 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Pago expirado - Sonia Morales"
+  description="Tu sesión de pago expiró y puedes volver a intentar desde el checkout."
+  footer={false}
+>
+  <section class="shell success-panel">
+    <p class="eyebrow">Tiempo agotado</p>
+    <h1>Tu sesión de pago expiró.</h1>
+    <p class="lead">
+      Por seguridad, la pasarela cerró la sesión antes de completar el pago. Puedes volver a elegir tus entradas e intentarlo otra vez.
+    </p>
+    <div class="notice-panel__actions">
+      <a class="cta-button" href="/">Volver a eventos</a>
+      <a class="ghost-button" href="/#eventos">Ver cartelera</a>
+    </div>
+  </section>
+</BaseLayout>

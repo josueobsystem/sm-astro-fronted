@@ -3,7 +3,7 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import CheckoutPayment from '@/islands/CheckoutPayment.vue';
 import { apiGet } from '@/lib/api';
 import { getAuthStatus } from '@/lib/auth';
-import { getApiBaseUrl, getNiubizCheckoutUrl } from '@/lib/config';
+import { getApiBaseUrl, getNiubizCheckoutUrl, getPublicSiteUrl } from '@/lib/config';
 import type { CheckoutReservation, HomePayload, PublicEvent } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
@@ -37,6 +37,7 @@ if (reservationResult.ok && reservationResult.data.event_id) {
     <CheckoutPayment
       client:load
       apiBaseUrl={getApiBaseUrl(env)}
+      siteUrl={getPublicSiteUrl(env)}
       reservation={reservationResult.data}
       event={event}
       niubizCheckoutUrl={getNiubizCheckoutUrl(env)}

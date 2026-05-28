@@ -1,0 +1,26 @@
+---
+import type { HomePayload } from '@/types/api';
+import HeroShowcase from '@/components/HeroShowcase.astro';
+import { apiGet } from '@/lib/api';
+import { env } from 'cloudflare:workers';
+
+interface Props {
+  query?: Record<string, string>;
+}
+
+const { query = {} } = Astro.props as Props;
+const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
+const home = homeResult.ok ? homeResult.data : null;
+---
+
+{home ? (
+  <HeroShowcase slides={home.slides} />
+) : (
+  <section class="section">
+    <div class="shell hero-swiper-shell" aria-hidden="true">
+      <div class="hero-slide-frame">
+        <div class="hero-slide-overlay"></div>
+      </div>
+    </div>
+  </section>
+)}

@@ -1,7 +1,6 @@
 ---
 import type { HomePayload } from '@/types/api';
 import EventCard from '@/components/EventCard.astro';
-import HeroShowcase from '@/components/HeroShowcase.astro';
 import VenuesSection from '@/components/VenuesSection.astro';
 import { apiGet } from '@/lib/api';
 import { env } from 'cloudflare:workers';
@@ -17,8 +16,6 @@ const home = homeResult.ok ? homeResult.data : null;
 
 {home ? (
   <>
-    <HeroShowcase slides={home.slides} />
-
     <section class="section" id="eventos">
       <div class="shell">
         <div class="section-heading">
