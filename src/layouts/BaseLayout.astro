@@ -1,0 +1,133 @@
+---
+import '@/styles/global.css';
+import { env } from 'cloudflare:workers';
+import HeaderUserMenu from '../islands/HeaderUserMenu.vue';
+import HeaderEventSearch from '../islands/HeaderEventSearch.vue';
+import { getAuthStatus } from '@/lib/auth';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string | null;
+  chrome?: boolean;
+  footer?: boolean;
+}
+
+const {
+  title,
+  description = 'Entradas oficiales, conciertos y experiencias en vivo de Sonia Morales.',
+  image = null,
+  chrome = true,
+  footer = chrome,
+} = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const logoUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png';
+const authStatus = chrome
+  ? await getAuthStatus(Astro.request, env)
+  : { authenticated: false, user_id: null, user: null, permissions: [], actor_type: null };
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#ec4899" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" as="style" />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  </head>
+  <body class:list={[!chrome && 'no-chrome']}>
+    {chrome && (
+      <header class="site-header navbar-sticky">
+        <nav class="site-nav shell" aria-label="Principal">
+          <a class="brand" href="/" aria-label="Inicio - Sonia Morales">
+            <span class="brand-logo">
+              <img src={logoUrl} alt="Sonia Morales" />
+            </span>
+          </a>
+          <div class="header-search-slot">
+            <HeaderEventSearch client:load />
+          </div>
+          <div class="header-actions header-auth-actions">
+            {authStatus.authenticated && authStatus.user ? (
+              <HeaderUserMenu
+                user={authStatus.user}
+                actorType={authStatus.actor_type}
+                permissions={authStatus.permissions ?? []}
+                client:load
+              />
+            ) : (
+              <>
+                <a class="header-login" href="/login">Iniciar Sesión</a>
+                <a class="header-register" href="/register">Registrarse</a>
+              </>
+            )}
+          </div>
+        </nav>
+        <div class="navbar-decoration" aria-hidden="true">
+          <svg viewBox="0 0 1630 253" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMax slice">
+            <path d="M108 166.5C86.8 144.5 27.1667 139.333 0 139.5C8.8 143.5 25.6667 172.167 33 186C65.4 240.8 101.5 238.167 115.5 230C104.7 208.4 70 180.333 54 169C87.6 185.8 112.667 209.667 121 219.5C128.6 192.7 115.5 173 108 166.5Z" fill="white" />
+            <path d="M451.5 216.5C413.9 191.3 384.833 208.333 375 220C400 168.5 461 160.5 516 178C560 192 632 233.833 662.5 253H566.5C583.7 248.2 618.667 246.333 634 246C591.6 218.4 568.5 207.5 557.5 205C540.5 193.5 492.5 190.667 471.5 191C508.7 195.4 531.333 203.833 538 207.5C524.833 221 489.1 241.7 451.5 216.5Z" fill="white" />
+            <path d="M849 65C865.4 105.4 836.5 159.5 820 181.5C820 179 818 90.5 815.5 95.5C813.5 99.5 811.333 153.5 810.5 180C764.5 114 782.5 78.5 785 59.5C787 44.3 806.167 13.5 815.5 0C819.833 4.83333 832.6 24.6 849 65Z" fill="white" />
+            <path d="M970 253H1056.5C1035.3 248.2 1002 248 988 248.5C1001 239.5 1037.6 217.4 1080 201C1122.4 184.6 1156.67 191.167 1168.5 196.5C1127.7 194.5 1098.5 204.333 1089 209.5C1136 242 1159 228.5 1197.5 209.5C1228.3 194.3 1251.67 209.833 1259.5 219.5C1201.9 140.7 1112.17 169.333 1074.5 193.5C1094.87 174.621 1093.52 155.743 1093.01 148.635L1093 148.5C1092.5 141.5 1088 125.5 1070 121.5C1052 117.5 1048 136 1048 140.5C1048 145 1050.5 159.5 1067 160C1080.2 160.4 1083.17 147.167 1083 140.5C1094.2 171.3 1077 190.667 1067 196.5L970 253Z" fill="white" />
+            <path d="M1473.5 253H1461L1506.5 213C1489.5 141.5 1639 134 1629 140.5C1621 145.7 1605.67 172.333 1599 185C1570.2 224.6 1539 235.5 1527 236L1518.5 229.5C1530.1 205.1 1556.33 183.667 1568 176C1548.8 180 1497 229 1473.5 253Z" fill="white" />
+            <circle cx="907.5" cy="46.5" r="12.5" fill="white" />
+            <circle cx="725.5" cy="46.5" r="12.5" fill="white" />
+          </svg>
+        </div>
+      </header>
+    )}
+    <main>
+      <slot />
+    </main>
+    {footer && <footer class="site-footer" id="contacto">
+      <div class="shell footer-inner">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <img src={logoUrl} alt="Sonia Morales" />
+            <p class="footer-tagline">La Princesa del Folclore Peruano</p>
+            <p>Frontend SSR desacoplado del backend, pero con la misma identidad visual y la misma energía de la marca.</p>
+          </div>
+
+          <div>
+            <h4 class="footer-title">Empresa</h4>
+            <div class="footer-links">
+              <a href="/#solicitud-evento">Bodas</a>
+              <a href="/#solicitud-evento">Fiestas Privadas</a>
+              <a href="/#solicitud-evento">Eventos Corporativos</a>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="footer-title">Legal</h4>
+            <div class="footer-links">
+              <a href="/#eventos">Política de Privacidad</a>
+              <a href="/#eventos">Términos y Condiciones</a>
+              <a href="/#eventos">Aviso Legal</a>
+            </div>
+          </div>
+
+          <div>
+            <h4 class="footer-title">Redes Sociales</h4>
+            <div class="footer-social" aria-label="Redes sociales">
+              <a class="footer-social-link" href="https://www.instagram.com/soniamoralesperu" target="_blank" rel="noopener noreferrer" aria-label="Instagram de Sonia Morales">IG</a>
+              <a class="footer-social-link" href="https://www.youtube.com/SoniaMorales" target="_blank" rel="noopener noreferrer" aria-label="YouTube de Sonia Morales">YT</a>
+              <a class="footer-social-link" href="https://www.facebook.com/SoniaMorales" target="_blank" rel="noopener noreferrer" aria-label="Facebook de Sonia Morales">FB</a>
+              <a class="footer-social-link" href="https://www.tiktok.com/@soniamorales" target="_blank" rel="noopener noreferrer" aria-label="TikTok de Sonia Morales">TT</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>}
+  </body>
+</html>

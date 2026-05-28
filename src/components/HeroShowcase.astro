@@ -1,0 +1,159 @@
+---
+import type { HomeSlide } from '@/types/api';
+
+interface Props {
+  slides: HomeSlide[];
+}
+
+const { slides } = Astro.props;
+const normalizedSlides = slides.length
+  ? slides
+  : [
+      {
+        image: '/event-placeholder.svg',
+        image_sm: '/event-placeholder.svg',
+        alt: 'Sonia Morales',
+        title: 'Sonia Morales',
+        subtitle: 'La Princesa del Folclore Peruano',
+        focus_keyword: null,
+        seo_description: null,
+        cta_label: null,
+        cta_url: null,
+        autoplay_delay_seconds: 5,
+      },
+    ];
+
+const hasMultipleSlides = normalizedSlides.length > 1;
+---
+
+<section class="hero-slider" aria-label="Carrusel de imágenes principales">
+  <div class="shell hero-swiper-shell" data-hero-slider data-hero-autoplay="5000">
+    <div class="floating-particles" aria-hidden="true">
+      <span class="particle" style="width: 10px; height: 10px; left: 12%; animation-delay: 0s;"></span>
+      <span class="particle" style="width: 7px; height: 7px; left: 28%; animation-delay: 2s;"></span>
+      <span class="particle" style="width: 12px; height: 12px; left: 49%; animation-delay: 4s;"></span>
+      <span class="particle" style="width: 8px; height: 8px; left: 71%; animation-delay: 6s;"></span>
+      <span class="particle" style="width: 9px; height: 9px; left: 88%; animation-delay: 8s;"></span>
+    </div>
+
+    <div class="hero-swiper">
+      <div class="hero-slider-track">
+        {normalizedSlides.map((slide, index) => (
+          <article class:list={['hero-slider-slide', { 'is-active': index === 0 }]} data-hero-slide>
+            {slide.cta_url ? (
+              <a class="hero-slide-link" href={slide.cta_url} aria-label={slide.alt}>
+                <picture class="hero-slide-picture">
+                  {slide.image_sm && <source media="(max-width: 767px)" srcset={slide.image_sm} />}
+                  <img class="hero-slide-image" src={slide.image} alt={slide.alt} draggable="false" />
+                </picture>
+              </a>
+            ) : (
+              <div class="hero-slide-frame">
+                <picture class="hero-slide-picture">
+                  {slide.image_sm && <source media="(max-width: 767px)" srcset={slide.image_sm} />}
+                  <img class="hero-slide-image" src={slide.image} alt={slide.alt} draggable="false" />
+                </picture>
+              </div>
+            )}
+            <div class="hero-slide-overlay" aria-hidden="true"></div>
+          </article>
+        ))}
+      </div>
+
+      {hasMultipleSlides && (
+        <>
+          <button class="btn-nav-arrow btn-nav-arrow--prev" type="button" aria-label="Imagen anterior" data-hero-prev>
+            <span class="btn-nav-arrow__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M15 18L9 12L15 6" />
+              </svg>
+            </span>
+          </button>
+
+          <button class="btn-nav-arrow btn-nav-arrow--next" type="button" aria-label="Imagen siguiente" data-hero-next>
+            <span class="btn-nav-arrow__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M9 18L15 12L9 6" />
+              </svg>
+            </span>
+          </button>
+
+          <div class="slider-indicators" aria-label="Indicadores de diapositivas">
+            {normalizedSlides.map((slide, index) => (
+              <button
+                class:list={['slider-indicator', { 'slider-indicator--active': index === 0 }]}
+                type="button"
+                aria-label={`Ir a la imagen ${index + 1}: ${slide.alt}`}
+                data-hero-dot={index}
+              />
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+
+  <script is:inline>
+    (() => {
+      const root = document.querySelector('[data-hero-slider]');
+      if (!root) return;
+
+      const track = root.querySelector('.hero-slider-track');
+      const slides = Array.from(root.querySelectorAll('[data-hero-slide]'));
+      const dots = Array.from(root.querySelectorAll('[data-hero-dot]'));
+      const prevButton = root.querySelector('[data-hero-prev]');
+      const nextButton = root.querySelector('[data-hero-next]');
+      const autoplayDelay = Number(root.getAttribute('data-hero-autoplay') || 5000);
+
+      if (!track || slides.length <= 1) return;
+
+      let activeIndex = 0;
+      let timerId = window.setInterval(() => move(1), autoplayDelay);
+
+      function render() {
+        track.style.transform = `translateX(-${activeIndex * 100}%)`;
+
+        slides.forEach((slide, index) => {
+          slide.classList.toggle('is-active', index === activeIndex);
+        });
+
+        dots.forEach((dot, index) => {
+          dot.classList.toggle('slider-indicator--active', index === activeIndex);
+        });
+      }
+
+      function move(step) {
+        activeIndex = (activeIndex + step + slides.length) % slides.length;
+        render();
+      }
+
+      function restartAutoplay() {
+        window.clearInterval(timerId);
+        timerId = window.setInterval(() => move(1), autoplayDelay);
+      }
+
+      prevButton?.addEventListener('click', () => {
+        move(-1);
+        restartAutoplay();
+      });
+
+      nextButton?.addEventListener('click', () => {
+        move(1);
+        restartAutoplay();
+      });
+
+      dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+          activeIndex = index;
+          render();
+          restartAutoplay();
+        });
+      });
+
+      root.addEventListener('mouseenter', () => window.clearInterval(timerId));
+      root.addEventListener('mouseleave', restartAutoplay);
+
+      render();
+    })();
+  </script>
+</section>

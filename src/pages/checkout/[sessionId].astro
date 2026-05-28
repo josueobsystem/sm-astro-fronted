@@ -1,0 +1,61 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import CheckoutPayment from '@/islands/CheckoutPayment.vue';
+import { apiGet } from '@/lib/api';
+import { getAuthStatus, loginUrlFor } from '@/lib/auth';
+import { getApiBaseUrl, getNiubizCheckoutUrl } from '@/lib/config';
+import type { HomePayload, PublicEvent } from '@/types/api';
+import { env } from 'cloudflare:workers';
+
+const { sessionId } = Astro.params;
+const reservationId = Astro.url.searchParams.get('reservation_id');
+const authStatus = await getAuthStatus(Astro.request, env);
+
+if (!authStatus.authenticated) {
+  return Astro.redirect(loginUrlFor(Astro.url), 302);
+}
+
+type ReservationPayload = {
+  id: string;
+  event_id?: string | null;
+  session_id: string;
+  items: unknown[];
+  expires_at: string;
+};
+const reservationResult = reservationId
+  ? await apiGet<ReservationPayload>(
+      `/api/orders/reservations/${reservationId}`,
+      env,
+      { session_id: sessionId },
+    )
+  : { ok: false as const, status: 422, message: 'Falta reservation_id.' };
+let event: PublicEvent | null = null;
+
+if (reservationResult.ok && reservationResult.data.event_id) {
+  const homeResult = await apiGet<HomePayload>('/api/public/home', env);
+  event = homeResult.ok
+    ? homeResult.data.events.find((item) => item.id === reservationResult.data.event_id) || null
+    : null;
+}
+---
+
+<BaseLayout title="Checkout - Sonia Morales" description="Confirma y paga tus entradas oficiales." footer={false}>
+  {reservationResult.ok ? (
+    <CheckoutPayment
+      client:load
+      apiBaseUrl={getApiBaseUrl(env)}
+      reservation={reservationResult.data}
+      event={event}
+      niubizCheckoutUrl={getNiubizCheckoutUrl(env)}
+    />
+  ) : (
+    <section class="shell success-panel">
+      <>
+        <p class="eyebrow">Reserva no disponible</p>
+        <h1>No pudimos abrir tu checkout.</h1>
+        <p class="lead">{reservationResult.message}</p>
+        <a class="cta-button" href="/">Volver a eventos</a>
+      </>
+    </section>
+  )}
+</BaseLayout>

@@ -1,0 +1,33 @@
+---
+import type { HomePayload } from '@/types/api';
+
+interface Props {
+  venues: HomePayload['venues'];
+}
+
+const { venues } = Astro.props;
+---
+
+<section class="venues-section" id="locales">
+  <div class="floating-particles" aria-hidden="true">
+    <span class="particle" style="width: 12px; height: 12px; left: 15%; animation-delay: 0s;"></span>
+    <span class="particle" style="width: 8px; height: 8px; left: 45%; animation-delay: 3s;"></span>
+    <span class="particle" style="width: 10px; height: 10px; left: 75%; animation-delay: 6s;"></span>
+  </div>
+
+  <div class="shell">
+    <div class="venue-grid">
+      {venues.map((venue) => (
+        <article class="venue-card">
+          <div class="venue-card__badge" aria-hidden="true">{venue.name.slice(0, 1)}</div>
+          <h3 class="venue-card__title">{venue.name}</h3>
+          <p class="venue-card__subtitle">{venue.subtitle}</p>
+          <p class="venue-card__description">{venue.description}</p>
+          <a class="cta-button venue-card__button" href={venue.link} aria-label={`Más información sobre ${venue.name}`}>
+            Más información
+          </a>
+        </article>
+      ))}
+    </div>
+  </div>
+</section>

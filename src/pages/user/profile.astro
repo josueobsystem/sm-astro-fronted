@@ -1,0 +1,18 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ClientPortal from '../../islands/ClientPortal.vue';
+import { getAuthStatus, loginUrlFor } from '@/lib/auth';
+
+const authStatus = await getAuthStatus(Astro.request, env);
+
+if (!authStatus.authenticated || !authStatus.user) {
+  return Astro.redirect(loginUrlFor(Astro.url));
+}
+
+const initialTab = Astro.url.searchParams.get('tab') || 'profile';
+---
+
+<BaseLayout title="Mi Perfil | Sonia Morales" description="Portal del cliente de Sonia Morales.">
+  <ClientPortal initialUser={authStatus.user} initialTab={initialTab} client:load />
+</BaseLayout>

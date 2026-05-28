@@ -1,0 +1,137 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import EventTicketsIsland from '@/islands/EventTicketsIsland.vue';
+import { apiGet, formatDate, formatTime } from '@/lib/api';
+import { getAuthStatus, loginUrlFor } from '@/lib/auth';
+import { getApiBaseUrl } from '@/lib/config';
+import type { PublicEvent } from '@/types/api';
+import { env } from 'cloudflare:workers';
+
+const { slug } = Astro.params;
+const authStatus = await getAuthStatus(Astro.request, env);
+const eventResult = await apiGet<{ event: PublicEvent; seo: { title: string; description: string; image?: string | null } }>(
+  `/api/public/events/${slug}`,
+  env,
+);
+const payload = eventResult.ok ? eventResult.data : null;
+const event = payload?.event;
+const longDate = (value: string | null | undefined) => {
+  if (!value) return 'Por confirmar';
+
+  return new Intl.DateTimeFormat('es-PE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(new Date(value));
+};
+const artistInitials = (name: string) => name.slice(0, 2).toUpperCase();
+---
+
+<BaseLayout
+  title={payload?.seo.title || 'Evento no encontrado'}
+  description={payload?.seo.description || 'No pudimos encontrar el evento solicitado.'}
+  image={payload?.seo.image}
+>
+  {event ? (
+    <section class="event-page">
+      <div class="event-shell event-layout-card">
+        <div class="event-header-card">
+          <div class="event-header-media">
+            <picture>
+              <source media="(max-width: 767px)" srcset={event.banner_sm_url || event.banner_url || '/event-placeholder.svg'} />
+              <img src={event.banner_url || '/event-placeholder.svg'} alt={event.title} />
+            </picture>
+          </div>
+
+          <div class="event-header-content">
+            <h1 class="event-header-title">{event.title}</h1>
+
+            <div class="event-address-row">
+              <svg class="event-info-icon" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a2 2 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <p>{event.venue_address || 'Dirección por confirmar'}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="event-content-grid">
+          <article class="event-description-card">
+            <div class="event-section-block">
+              <h2 class="event-section-kicker">Detalle del evento</h2>
+
+              <div class="event-facts-grid">
+                <div>
+                  <span class="event-fact-label">Evento</span>
+                  <p class="event-fact-value">{event.title}</p>
+                </div>
+
+                <div>
+                  <span class="event-fact-label">Dirección</span>
+                  <p class="event-fact-value">{event.venue_address || 'Por confirmar'}</p>
+                </div>
+
+                <div>
+                  <span class="event-fact-label">Fecha</span>
+                  <p class="event-fact-value">{longDate(event.start_at)}</p>
+                </div>
+
+                <div>
+                  <span class="event-fact-label">Hora</span>
+                  <p class="event-fact-value">{formatTime(event.start_at) || 'Por confirmar'}</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 class="event-section-kicker" style="margin-top:2rem">Descripción</h3>
+              <div class="event-rich-content" set:html={event.description || ''} />
+            </div>
+
+            {(event.artists || []).length > 0 && (
+              <div class="event-section-block" style="padding-top:2rem">
+                <h3 class="event-section-kicker">Artistas asociados</h3>
+                <div class="event-artists-grid">
+                  {(event.artists || []).map((artist) => (
+                    <article class="event-artist-card">
+                      {artist.image_url ? (
+                        <img src={artist.image_url} alt={artist.name} />
+                      ) : (
+                        <div class="event-artist-placeholder">{artistInitials(artist.name)}</div>
+                      )}
+                      <div>
+                        <h4 style="margin:0;color:#111827;font-size:1rem">{artist.name}</h4>
+                        {artist.is_headliner && <p style="margin:.35rem 0 0;color:var(--color-primary-600);font-size:.72rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase">Headliner</p>}
+                        {artist.schedule_at && <p style="margin:.5rem 0 0;color:#6b7280;font-size:.875rem">{formatTime(artist.schedule_at)}</p>}
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            )}
+          </article>
+
+          <aside class="event-ticket-sticky">
+            <EventTicketsIsland
+              client:load
+              apiBaseUrl={getApiBaseUrl(env)}
+              eventId={event.id}
+              tickets={event.tickets || []}
+              initialAuthenticated={authStatus.authenticated}
+              loginUrl={loginUrlFor(Astro.url)}
+            />
+          </aside>
+        </div>
+      </div>
+    </section>
+  ) : (
+    <section class="shell notice-panel">
+      <p class="eyebrow">404</p>
+      <h1>Evento no encontrado.</h1>
+      <p class="lead">{eventResult.message}</p>
+      <a class="cta-button" href="/">Volver a eventos</a>
+    </section>
+  )}
+</BaseLayout>

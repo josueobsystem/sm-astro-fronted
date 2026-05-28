@@ -1,0 +1,32 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import TicketSuccess from '@/islands/TicketSuccess.vue';
+import { apiGet } from '@/lib/api';
+import { getApiBaseUrl } from '@/lib/config';
+import type { CheckoutSuccessPayload } from '@/types/api';
+import { env } from 'cloudflare:workers';
+
+const search = Object.fromEntries(Astro.url.searchParams);
+const result = await apiGet<CheckoutSuccessPayload>('/api/orders/checkout/success', env, search);
+const payload = result.ok
+  ? result.data
+  : {
+      order: null,
+      tickets: [],
+      purchaseNumber: Astro.url.searchParams.get('purchase_number'),
+      flowId: null,
+      error: (result.validations?.checkout as CheckoutSuccessPayload['error']) || {
+        message: result.message,
+        code: `HTTP_${result.status}`,
+        reference: null,
+      },
+    };
+---
+
+<BaseLayout
+  title={payload.error ? 'Resultado de compra - Sonia Morales' : 'Compra exitosa - Sonia Morales'}
+  description="Resultado de tu compra y descarga de tickets oficiales."
+  footer={false}
+>
+  <TicketSuccess client:load payload={payload} apiBaseUrl={getApiBaseUrl(env)} />
+</BaseLayout>

@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "sm-astro-frontend",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_date": "2026-05-27",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": "./dist"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "PUBLIC_API_BASE_URL": "http://localhost:8000",
+    "PUBLIC_SITE_URL": "http://localhost:4321",
+    "PUBLIC_NIUBIZ_CHECKOUT_JS_URL": "https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js"
+  }
+}
