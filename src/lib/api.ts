@@ -1,4 +1,5 @@
 import { getApiBaseUrl } from './config';
+import { fetchWithTimeout } from './fetch';
 import type { ApiEnvelope } from '@/types/api';
 
 type RuntimeLocals = Parameters<typeof getApiBaseUrl>[0];
@@ -58,7 +59,7 @@ export async function apiGet<T>(
   });
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       headers: {
         Accept: 'application/json',
       },

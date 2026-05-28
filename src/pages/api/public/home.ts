@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
+import { fetchWithTimeout } from '@/lib/fetch';
 import { proxyJsonResponse } from '@/lib/proxy';
 
 export const GET: APIRoute = async ({ url }) => {
@@ -10,7 +11,7 @@ export const GET: APIRoute = async ({ url }) => {
     upstream.searchParams.set(key, value);
   });
 
-  const response = await fetch(upstream, {
+  const response = await fetchWithTimeout(upstream, {
     headers: {
       Accept: 'application/json',
     },

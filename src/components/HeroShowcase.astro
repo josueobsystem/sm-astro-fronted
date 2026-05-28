@@ -27,7 +27,11 @@ const hasMultipleSlides = normalizedSlides.length > 1;
 ---
 
 <section class="hero-slider" aria-label="Carrusel de imágenes principales">
-  <div class="shell hero-swiper-shell" data-hero-slider data-hero-autoplay="5000">
+  <div
+    class="shell hero-swiper-shell"
+    data-hero-slider
+    data-hero-delays={JSON.stringify(normalizedSlides.map((slide) => (slide.autoplay_delay_seconds || 5) * 1000))}
+  >
     <div class="floating-particles" aria-hidden="true">
       <span class="particle" style="width: 10px; height: 10px; left: 12%; animation-delay: 0s;"></span>
       <span class="particle" style="width: 7px; height: 7px; left: 28%; animation-delay: 2s;"></span>
@@ -103,12 +107,16 @@ const hasMultipleSlides = normalizedSlides.length > 1;
       const dots = Array.from(root.querySelectorAll('[data-hero-dot]'));
       const prevButton = root.querySelector('[data-hero-prev]');
       const nextButton = root.querySelector('[data-hero-next]');
-      const autoplayDelay = Number(root.getAttribute('data-hero-autoplay') || 5000);
+      const autoplayDelays = JSON.parse(root.getAttribute('data-hero-delays') || '[]');
 
       if (!track || slides.length <= 1) return;
 
       let activeIndex = 0;
-      let timerId = window.setInterval(() => move(1), autoplayDelay);
+      let timerId: number | undefined;
+
+      function getActiveDelay() {
+        return Number(autoplayDelays[activeIndex] || 5000);
+      }
 
       function render() {
         track.style.transform = `translateX(-${activeIndex * 100}%)`;
@@ -125,21 +133,22 @@ const hasMultipleSlides = normalizedSlides.length > 1;
       function move(step) {
         activeIndex = (activeIndex + step + slides.length) % slides.length;
         render();
+        restartAutoplay();
       }
 
       function restartAutoplay() {
-        window.clearInterval(timerId);
-        timerId = window.setInterval(() => move(1), autoplayDelay);
+        if (timerId) {
+          window.clearTimeout(timerId);
+        }
+        timerId = window.setTimeout(() => move(1), getActiveDelay());
       }
 
       prevButton?.addEventListener('click', () => {
         move(-1);
-        restartAutoplay();
       });
 
       nextButton?.addEventListener('click', () => {
         move(1);
-        restartAutoplay();
       });
 
       dots.forEach((dot, index) => {
@@ -150,10 +159,11 @@ const hasMultipleSlides = normalizedSlides.length > 1;
         });
       });
 
-      root.addEventListener('mouseenter', () => window.clearInterval(timerId));
+      root.addEventListener('mouseenter', () => window.clearTimeout(timerId));
       root.addEventListener('mouseleave', restartAutoplay);
 
       render();
+      restartAutoplay();
     })();
   </script>
 </section>
