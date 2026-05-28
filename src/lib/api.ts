@@ -7,12 +7,49 @@ export type ApiResult<T> =
   | { ok: true; data: T; message: string | null }
   | { ok: false; status: number; message: string; validations?: Record<string, unknown> };
 
+function isLocalApiUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+
+    return /^(localhost|127\.0\.0\.1|0\.0\.0\.0)$/i.test(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+function looksLikeJson(text: string): boolean {
+  const trimmed = text.trim();
+
+  return trimmed.startsWith('{') || trimmed.startsWith('[');
+}
+
+function shortText(value: string, max = 180): string {
+  const normalized = value.replace(/\s+/g, ' ').trim();
+
+  if (normalized.length <= max) {
+    return normalized;
+  }
+
+  return `${normalized.slice(0, max)}...`;
+}
+
 export async function apiGet<T>(
   path: string,
   env?: RuntimeLocals,
   search?: Record<string, string | number | boolean | null | undefined>,
 ): Promise<ApiResult<T>> {
-  const url = new URL(path, getApiBaseUrl(env));
+  const baseUrl = getApiBaseUrl(env);
+
+  if (!import.meta.env.DEV && isLocalApiUrl(baseUrl)) {
+    return {
+      ok: false,
+      status: 503,
+      message:
+        'Configuración inválida: PUBLIC_API_BASE_URL apunta a localhost. En Cloudflare Workers debes usar el dominio público de tu backend.',
+    };
+  }
+
+  const url = new URL(path, baseUrl);
 
   Object.entries(search ?? {}).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
@@ -26,7 +63,28 @@ export async function apiGet<T>(
         Accept: 'application/json',
       },
     });
-    const envelope = (await response.json()) as ApiEnvelope<T>;
+    const contentType = response.headers.get('content-type') || '';
+    const rawBody = await response.text();
+    const canParseJson = contentType.includes('application/json') || looksLikeJson(rawBody);
+
+    if (!canParseJson) {
+      return {
+        ok: false,
+        status: response.status || 502,
+        message: `La API respondió un formato no JSON: ${shortText(rawBody || 'respuesta vacía')}`,
+      };
+    }
+
+    let envelope: ApiEnvelope<T>;
+    try {
+      envelope = JSON.parse(rawBody) as ApiEnvelope<T>;
+    } catch {
+      return {
+        ok: false,
+        status: response.status || 502,
+        message: `No se pudo interpretar la respuesta JSON de la API: ${shortText(rawBody || 'respuesta vacía')}`,
+      };
+    }
 
     if (!response.ok || envelope.status === 'error') {
       return {
