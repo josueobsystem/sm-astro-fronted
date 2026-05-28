@@ -11,7 +11,7 @@ const props = defineProps<{
   niubizCheckoutUrl: string;
 }>();
 
-const DEFAULT_NIUBIZ_LOGO_URL = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png';
+const DEFAULT_NIUBIZ_LOGO_PATH = '/niubiz-merchant-logo.png';
 const DEFAULT_PROCESSING_FEE_LABEL = 'Cargo por procesamiento de pago';
 const DEFAULT_PROCESSING_FEE_RATE_LABEL = '3.45% + IGV';
 const DEFAULT_PROCESSING_FEE_TOTAL_RATE = 0.0345 * 1.18;
@@ -191,7 +191,7 @@ async function startPayment() {
       merchantid: data.merchant_id,
       purchasenumber: data.purchase_number,
       amount: Number(data.amount),
-      merchantlogo: DEFAULT_NIUBIZ_LOGO_URL,
+      merchantlogo: buildFrontendUrl(DEFAULT_NIUBIZ_LOGO_PATH),
       merchantname: 'Sonia Morales',
       timeouturl: buildFrontendUrl('/checkout/timeout'),
       action,
@@ -335,7 +335,7 @@ onUnmounted(() => {
             >
               <span class="method-left">
                 <span class="method-brand-logo-wrap">
-                  <img :src="DEFAULT_NIUBIZ_LOGO_URL" alt="Logo Sonia Morales" class="method-brand-logo" />
+                  <img :src="DEFAULT_NIUBIZ_LOGO_PATH" alt="Logo Sonia Morales" class="method-brand-logo" />
                 </span>
                 <span class="method-label">Pago online (Tarjetas, Yape y más)</span>
               </span>

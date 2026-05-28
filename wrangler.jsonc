@@ -12,8 +12,8 @@
     "enabled": true
   },
   "vars": {
-    "PUBLIC_API_BASE_URL": "http://localhost:8000",
-    "PUBLIC_SITE_URL": "http://localhost:4321",
+    "PUBLIC_API_BASE_URL": "https://dev.soniamorales.pe",
+    "PUBLIC_SITE_URL": "https://sm-astro-fronted.josueoblitas15.workers.dev/",
     "PUBLIC_NIUBIZ_CHECKOUT_JS_URL": "https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js"
   }
 }
