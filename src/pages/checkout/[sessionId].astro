@@ -12,8 +12,7 @@ const reservationId = Astro.url.searchParams.get('reservation_id');
 const authStatus = await getAuthStatus(Astro.request, env);
 
 if (!authStatus.authenticated) {
-  const redirect = `${Astro.url.pathname}${Astro.url.search}`;
-  return Astro.redirect(`/login?redirect=${encodeURIComponent(redirect)}`, 302);
+  return Astro.redirect(`/login?redirect=${encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`)}`, 302);
 }
 
 const reservationResult = reservationId

@@ -252,24 +252,39 @@ onUnmounted(() => {
     <main class="checkout-body">
       <div class="checkout-grid">
         <section class="checkout-main">
+          <div class="checkout-contact-card">
+            <h3>Datos de Contacto</h3>
+            <label>
+              <span>Nombre Completo</span>
+              <input v-model="name" class="checkout-input" placeholder="Tu nombre" />
+            </label>
+            <label>
+              <span>Correo Electrónico</span>
+              <input v-model="email" type="email" class="checkout-input" placeholder="tucorreo@ejemplo.com" />
+              <small class="meta-line">Aquí enviaremos tus entradas.</small>
+            </label>
+            <label>
+              <span>Teléfono (Opcional)</span>
+              <input v-model="phone" class="checkout-input" placeholder="999 999 999" />
+            </label>
+          </div>
+
           <div class="billing-wrap">
-            <div class="billing-badge">Selecciona documento</div>
+            <div class="billing-badge">Facturación</div>
 
-            <div class="doc-options">
-              <label class="doc-option" @click="billingType = 'boleta'">
-                <span class="radio-outer" :class="{ active: billingType === 'boleta' }">
-                  <span v-if="billingType === 'boleta'" class="radio-inner"></span>
-                </span>
-                <span>Boleta</span>
-              </label>
-
-              <label class="doc-option" @click="billingType = 'factura'">
-                <span class="radio-outer" :class="{ active: billingType === 'factura' }">
-                  <span v-if="billingType === 'factura'" class="radio-inner"></span>
-                </span>
-                <span>Factura</span>
-              </label>
-            </div>
+            <label class="billing-select-field">
+              <span class="field-label">Tipo de comprobante</span>
+              <div class="billing-select-wrap">
+                <select v-model="billingType" class="billing-select" aria-label="Selecciona tipo de comprobante">
+                  <option value="boleta">Boleta</option>
+                  <option value="factura">Factura</option>
+                </select>
+                <svg class="billing-select-chevron" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill="currentColor" d="m7 10 5 5 5-5z" />
+                </svg>
+              </div>
+            </label>
+            <p class="billing-helper">Por defecto emitiremos boleta.</p>
 
             <div v-if="billingType === 'factura'" class="invoice-form">
               <label class="field-group">
@@ -293,23 +308,6 @@ onUnmounted(() => {
               </p>
               <p>Para descargar tu {{ billingType === 'boleta' ? 'Boleta' : 'Factura' }} ingresa a <strong>"MIS ENTRADAS"</strong></p>
             </div>
-          </div>
-
-          <div class="checkout-contact-card">
-            <h3>Datos de Contacto</h3>
-            <label>
-              <span>Nombre Completo</span>
-              <input v-model="name" class="checkout-input" placeholder="Tu nombre" />
-            </label>
-            <label>
-              <span>Correo Electrónico</span>
-              <input v-model="email" type="email" class="checkout-input" placeholder="tucorreo@ejemplo.com" />
-              <small class="meta-line">Aquí enviaremos tus entradas.</small>
-            </label>
-            <label>
-              <span>Teléfono (Opcional)</span>
-              <input v-model="phone" class="checkout-input" placeholder="999 999 999" />
-            </label>
           </div>
 
           <div class="payment-selector">
@@ -336,11 +334,39 @@ onUnmounted(() => {
                 <span class="method-label">Pago online (Tarjetas, Yape y más)</span>
               </span>
               <span class="method-logos">
-                <span class="logo-pill logo-yape">yape</span>
-                <span class="logo-icon">VISA</span>
-                <span class="logo-icon">MC</span>
-                <span class="logo-icon">AMEX</span>
-                <span class="logo-icon">DIN</span>
+                <span class="logo-svg" title="Yape">
+                  <svg viewBox="0 0 56 26" aria-hidden="true">
+                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#7428d9" />
+                    <text x="28" y="17" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">yape</text>
+                  </svg>
+                </span>
+                <span class="logo-svg" title="Visa">
+                  <svg viewBox="0 0 56 26" aria-hidden="true">
+                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
+                    <text x="28" y="17" fill="#1a1f71" font-size="10" font-weight="800" text-anchor="middle">VISA</text>
+                  </svg>
+                </span>
+                <span class="logo-svg" title="Mastercard">
+                  <svg viewBox="0 0 56 26" aria-hidden="true">
+                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
+                    <circle cx="24" cy="13" r="7" fill="#eb001b" />
+                    <circle cx="32" cy="13" r="7" fill="#f79e1b" fill-opacity="0.9" />
+                  </svg>
+                </span>
+                <span class="logo-svg" title="American Express">
+                  <svg viewBox="0 0 56 26" aria-hidden="true">
+                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#0f7de8" />
+                    <text x="28" y="14.5" fill="#ffffff" font-size="6.5" font-weight="800" text-anchor="middle">AMERICAN</text>
+                    <text x="28" y="20.5" fill="#ffffff" font-size="6.5" font-weight="800" text-anchor="middle">EXPRESS</text>
+                  </svg>
+                </span>
+                <span class="logo-svg" title="Diners Club">
+                  <svg viewBox="0 0 56 26" aria-hidden="true">
+                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
+                    <circle cx="28" cy="13" r="7.2" fill="#0069aa" />
+                    <rect x="26" y="8.4" width="4" height="9.2" rx="2" fill="#ffffff" />
+                  </svg>
+                </span>
               </span>
             </button>
           </div>

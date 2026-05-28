@@ -7,8 +7,7 @@ import { getAuthStatus } from '@/lib/auth';
 const authStatus = await getAuthStatus(Astro.request, env);
 
 if (!authStatus.authenticated || !authStatus.user) {
-  const redirect = `${Astro.url.pathname}${Astro.url.search}`;
-  return Astro.redirect(`/login?redirect=${encodeURIComponent(redirect)}`);
+  return Astro.redirect(`/login?redirect=${encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`)}`);
 }
 
 const initialTab = Astro.url.searchParams.get('tab') || 'profile';
