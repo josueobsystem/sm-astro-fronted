@@ -30,7 +30,7 @@ const hasMultipleSlides = normalizedSlides.length > 1;
   <div
     class="shell hero-swiper-shell"
     data-hero-slider
-    data-hero-delays={JSON.stringify(normalizedSlides.map((slide) => (slide.autoplay_delay_seconds || 5) * 1000))}
+    data-hero-delays={normalizedSlides.map((slide) => (slide.autoplay_delay_seconds || 5) * 1000).join(',')}
   >
     <div class="floating-particles" aria-hidden="true">
       <span class="particle" style="width: 10px; height: 10px; left: 12%; animation-delay: 0s;"></span>
@@ -107,12 +107,14 @@ const hasMultipleSlides = normalizedSlides.length > 1;
       const dots = Array.from(root.querySelectorAll('[data-hero-dot]'));
       const prevButton = root.querySelector('[data-hero-prev]');
       const nextButton = root.querySelector('[data-hero-next]');
-      const autoplayDelays = JSON.parse(root.getAttribute('data-hero-delays') || '[]');
+      const autoplayDelays = (root.getAttribute('data-hero-delays') || '')
+        .split(',')
+        .map((value) => Number(value) || 5000);
 
       if (!track || slides.length <= 1) return;
 
       let activeIndex = 0;
-      let timerId: number | undefined;
+      let timerId;
 
       function getActiveDelay() {
         return Number(autoplayDelays[activeIndex] || 5000);

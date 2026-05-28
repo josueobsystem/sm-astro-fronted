@@ -1,0 +1,47 @@
+---
+import type { HomePayload } from '@/types/api';
+import EventCard from '@/components/EventCard.astro';
+import HeroShowcase from '@/components/HeroShowcase.astro';
+import VenuesSection from '@/components/VenuesSection.astro';
+import { apiGet } from '@/lib/api';
+import { env } from 'cloudflare:workers';
+
+interface Props {
+  query?: Record<string, string>;
+}
+
+const { query = {} } = Astro.props as Props;
+const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
+const home = homeResult.ok ? homeResult.data : null;
+---
+
+{home ? (
+  <>
+    <HeroShowcase slides={home.slides} />
+
+    <section class="section" id="eventos">
+      <div class="shell">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Cartelera</p>
+            <h2>Próximos eventos</h2>
+          </div>
+          <span class="meta-line">
+            {home.pagination.from || 0}-{home.pagination.to || 0} de {home.pagination.total}
+          </span>
+        </div>
+        <div class="events-grid">
+          {home.events.map((event) => <EventCard event={event} />)}
+        </div>
+      </div>
+    </section>
+
+    <VenuesSection venues={home.venues} />
+  </>
+) : (
+  <section class="shell notice-panel">
+    <p class="eyebrow">API no disponible</p>
+    <h1>No pudimos cargar los eventos.</h1>
+    <p class="lead">{homeResult.message}</p>
+  </section>
+)}
