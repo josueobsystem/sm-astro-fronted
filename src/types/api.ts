@@ -103,6 +103,25 @@ export type CheckoutTicket = {
   pdfUrl?: string | null;
 };
 
+export type ReservationItem = {
+  name?: string | null;
+  quantity: number;
+  price?: number;
+  total_price?: number;
+  currency?: string | null;
+  processing_fee_amount?: number | null;
+  processing_fee_label?: string | null;
+  processing_fee_rate_label?: string | null;
+};
+
+export type CheckoutReservation = {
+  id: string;
+  event_id?: string | null;
+  session_id: string;
+  items: ReservationItem[];
+  expires_at: string;
+};
+
 export type CheckoutSuccessPayload = {
   order: {
     id: string;

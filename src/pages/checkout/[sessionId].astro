@@ -2,9 +2,9 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import CheckoutPayment from '@/islands/CheckoutPayment.vue';
 import { apiGet } from '@/lib/api';
-import { getAuthStatus, loginUrlFor } from '@/lib/auth';
+import { getAuthStatus } from '@/lib/auth';
 import { getApiBaseUrl, getNiubizCheckoutUrl } from '@/lib/config';
-import type { HomePayload, PublicEvent } from '@/types/api';
+import type { CheckoutReservation, HomePayload, PublicEvent } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
 const { sessionId } = Astro.params;
@@ -12,18 +12,12 @@ const reservationId = Astro.url.searchParams.get('reservation_id');
 const authStatus = await getAuthStatus(Astro.request, env);
 
 if (!authStatus.authenticated) {
-  return Astro.redirect(loginUrlFor(Astro.url), 302);
+  const redirect = `${Astro.url.pathname}${Astro.url.search}`;
+  return Astro.redirect(`/login?redirect=${encodeURIComponent(redirect)}`, 302);
 }
 
-type ReservationPayload = {
-  id: string;
-  event_id?: string | null;
-  session_id: string;
-  items: unknown[];
-  expires_at: string;
-};
 const reservationResult = reservationId
-  ? await apiGet<ReservationPayload>(
+  ? await apiGet<CheckoutReservation>(
       `/api/orders/reservations/${reservationId}`,
       env,
       { session_id: sessionId },

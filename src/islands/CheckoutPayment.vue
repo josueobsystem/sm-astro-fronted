@@ -1,28 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { formatDate, formatMoney, formatTime } from '@/lib/api';
-import type { PublicEvent } from '@/types/api';
-
-type ReservationItem = {
-  name?: string | null;
-  quantity: number;
-  price?: number;
-  total_price?: number;
-  currency?: string | null;
-  processing_fee_amount?: number | null;
-  processing_fee_label?: string | null;
-  processing_fee_rate_label?: string | null;
-};
+import type { CheckoutReservation, PublicEvent } from '@/types/api';
 
 const props = defineProps<{
   apiBaseUrl: string;
-  reservation: {
-    id: string;
-    event_id?: string | null;
-    session_id: string;
-    items: ReservationItem[];
-    expires_at: string;
-  };
+  reservation: CheckoutReservation;
   event: PublicEvent | null;
   niubizCheckoutUrl: string;
 }>();
