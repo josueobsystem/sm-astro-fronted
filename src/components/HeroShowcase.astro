@@ -28,7 +28,7 @@ const hasMultipleSlides = normalizedSlides.length > 1;
 
 <section class="hero-slider" aria-label="Carrusel de imágenes principales">
   <div
-    class="shell hero-swiper-shell"
+    class="hero-swiper-shell"
     data-hero-slider
     data-hero-delays={normalizedSlides.map((slide) => (slide.autoplay_delay_seconds || 5) * 1000).join(',')}
   >
@@ -48,14 +48,28 @@ const hasMultipleSlides = normalizedSlides.length > 1;
               <a class="hero-slide-link" href={slide.cta_url} aria-label={slide.alt}>
                 <picture class="hero-slide-picture">
                   {slide.image_sm && <source media="(max-width: 767px)" srcset={slide.image_sm} />}
-                  <img class="hero-slide-image" src={slide.image} alt={slide.alt} draggable="false" />
+                  <img
+                    class="hero-slide-image"
+                    src={slide.image}
+                    alt={slide.alt}
+                    width="1700"
+                    height="420"
+                    draggable="false"
+                  />
                 </picture>
               </a>
             ) : (
               <div class="hero-slide-frame">
                 <picture class="hero-slide-picture">
                   {slide.image_sm && <source media="(max-width: 767px)" srcset={slide.image_sm} />}
-                  <img class="hero-slide-image" src={slide.image} alt={slide.alt} draggable="false" />
+                  <img
+                    class="hero-slide-image"
+                    src={slide.image}
+                    alt={slide.alt}
+                    width="1700"
+                    height="420"
+                    draggable="false"
+                  />
                 </picture>
               </div>
             )}
@@ -97,75 +111,4 @@ const hasMultipleSlides = normalizedSlides.length > 1;
     </div>
   </div>
 
-  <script is:inline>
-    (() => {
-      const root = document.querySelector('[data-hero-slider]');
-      if (!root) return;
-
-      const track = root.querySelector('.hero-slider-track');
-      const slides = Array.from(root.querySelectorAll('[data-hero-slide]'));
-      const dots = Array.from(root.querySelectorAll('[data-hero-dot]'));
-      const prevButton = root.querySelector('[data-hero-prev]');
-      const nextButton = root.querySelector('[data-hero-next]');
-      const autoplayDelays = (root.getAttribute('data-hero-delays') || '')
-        .split(',')
-        .map((value) => Number(value) || 5000);
-
-      if (!track || slides.length <= 1) return;
-
-      let activeIndex = 0;
-      let timerId;
-
-      function getActiveDelay() {
-        return Number(autoplayDelays[activeIndex] || 5000);
-      }
-
-      function render() {
-        track.style.transform = `translateX(-${activeIndex * 100}%)`;
-
-        slides.forEach((slide, index) => {
-          slide.classList.toggle('is-active', index === activeIndex);
-        });
-
-        dots.forEach((dot, index) => {
-          dot.classList.toggle('slider-indicator--active', index === activeIndex);
-        });
-      }
-
-      function move(step) {
-        activeIndex = (activeIndex + step + slides.length) % slides.length;
-        render();
-        restartAutoplay();
-      }
-
-      function restartAutoplay() {
-        if (timerId) {
-          window.clearTimeout(timerId);
-        }
-        timerId = window.setTimeout(() => move(1), getActiveDelay());
-      }
-
-      prevButton?.addEventListener('click', () => {
-        move(-1);
-      });
-
-      nextButton?.addEventListener('click', () => {
-        move(1);
-      });
-
-      dots.forEach((dot, index) => {
-        dot.addEventListener('click', () => {
-          activeIndex = index;
-          render();
-          restartAutoplay();
-        });
-      });
-
-      root.addEventListener('mouseenter', () => window.clearTimeout(timerId));
-      root.addEventListener('mouseleave', restartAutoplay);
-
-      render();
-      restartAutoplay();
-    })();
-  </script>
 </section>

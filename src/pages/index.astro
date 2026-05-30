@@ -11,8 +11,8 @@ const query = Object.fromEntries(Astro.url.searchParams);
   description="Compra entradas oficiales para eventos de Sonia Morales."
 >
   <HomeHero server:defer query={query}>
-    <section slot="fallback" class="section">
-      <div class="shell hero-swiper-shell" aria-hidden="true">
+    <section slot="fallback" class="hero-slider" aria-hidden="true">
+      <div class="hero-swiper-shell" aria-hidden="true">
         <div class="hero-slide-frame">
           <div class="hero-slide-overlay"></div>
         </div>

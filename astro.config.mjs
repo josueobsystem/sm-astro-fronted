@@ -6,6 +6,9 @@ export default defineConfig({
   site: process.env.PUBLIC_SITE_URL ?? 'https://soniamorales.pe',
   output: 'server',
   adapter: cloudflare(),
+  devToolbar: {
+    enabled: false,
+  },
   integrations: [vue()],
   vite: {
     css: {

@@ -512,14 +512,14 @@ select {
 
 .hero-slider {
   position: relative;
-  padding: 18px 0 0;
 }
 
 .hero-swiper-shell {
   position: relative;
+  width: 100%;
   overflow: hidden;
-  height: 500px;
-  border-radius: 32px;
+  height: min(700px, calc(100vw * 700 / 1700));
+  border-radius: 0;
   background: linear-gradient(135deg, rgba(var(--color-primary-500-rgb), 0.08), rgba(var(--color-secondary-500-rgb), 0.06));
   box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12);
 }
@@ -527,6 +527,7 @@ select {
 .hero-swiper {
   position: relative;
   height: 100%;
+  overflow: hidden;
   touch-action: pan-y;
   user-select: none;
 }
@@ -534,8 +535,7 @@ select {
 .hero-slider-track {
   display: flex;
   height: 100%;
-  transform: translateX(0);
-  transition: transform 600ms ease;
+  transform: translate3d(0, 0, 0);
   will-change: transform;
 }
 
@@ -623,22 +623,25 @@ select {
   top: 50%;
   z-index: 20;
   display: grid;
+  place-items: center;
   width: 50px;
   height: 50px;
-  margin-top: -25px;
+  transform: translateY(-50%);
   padding: 0;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.24);
   color: #fff;
   cursor: pointer;
   backdrop-filter: blur(10px);
-  transition: transform 200ms ease, background 200ms ease;
+  box-shadow: 0 12px 28px rgba(17, 24, 39, 0.22);
+  transition: transform 200ms ease, background 200ms ease, box-shadow 200ms ease;
 }
 
 .btn-nav-arrow:hover {
   transform: translateY(-50%) scale(1.06);
-  background: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.34);
+  box-shadow: 0 18px 34px rgba(17, 24, 39, 0.28);
 }
 
 .btn-nav-arrow--prev {
@@ -653,6 +656,8 @@ select {
   width: 22px;
   height: 22px;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-nav-arrow__icon svg {
@@ -1326,8 +1331,9 @@ select {
   }
 
   .hero-swiper-shell {
-    height: 360px;
-    border-radius: 24px;
+    width: 100%;
+    height: min(700px, calc(100vw * 700 / 1700));
+    border-radius: 0;
   }
 
   .btn-nav-arrow {
