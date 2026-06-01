@@ -2,23 +2,29 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import HomeHero from '@/components/HomeHero.astro';
 import HomeEvents from '@/components/HomeEvents.astro';
+import { apiGet } from '@/lib/api';
+import type { HomePayload } from '@/types/api';
+import { env } from 'cloudflare:workers';
 
 const query = Object.fromEntries(Astro.url.searchParams);
+const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
+const home = homeResult.ok ? homeResult.data : null;
+
+const firstSlide = home?.slides?.[0];
+const preloadImages = [
+  firstSlide?.image ? { href: firstSlide.image, media: '(min-width: 768px)' } : null,
+  (firstSlide?.image_sm || firstSlide?.image)
+    ? { href: firstSlide?.image_sm || firstSlide?.image || '', media: '(max-width: 767px)' }
+    : null,
+].filter((resource): resource is { href: string; media: string } => Boolean(resource?.href));
 ---
 
 <BaseLayout
   title="Sonia Morales - Entradas oficiales"
   description="Compra entradas oficiales para eventos de Sonia Morales."
+  preloadImages={preloadImages}
 >
-  <HomeHero server:defer query={query}>
-    <section slot="fallback" class="hero-slider" aria-hidden="true">
-      <div class="hero-swiper-shell" aria-hidden="true">
-        <div class="hero-slide-frame">
-          <div class="hero-slide-overlay"></div>
-        </div>
-      </div>
-    </section>
-  </HomeHero>
+  <HomeHero query={query} home={home} homeErrorMessage={homeResult.ok ? '' : homeResult.message} />
 
   <section class="section" id="solicitud-evento">
     <div class="shell notice-panel" style="margin-top:0">
@@ -30,21 +36,10 @@ const query = Object.fromEntries(Astro.url.searchParams);
         Completa el formulario para bodas, fiestas privadas, aniversarios y eventos corporativos.
       </p>
       <div class="notice-panel__actions">
-        <a class="cta-button" href="#contacto" style="margin-top:22px">Ir al formulario</a>
+        <a class="cta-button" href="/service-request" style="margin-top:22px">Ir al formulario</a>
       </div>
     </div>
   </section>
 
-  <HomeEvents server:defer query={query}>
-    <section slot="fallback" class="section">
-      <div class="shell" style="padding-top: 24px;">
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Cartelera</p>
-            <h2>Próximos eventos</h2>
-          </div>
-        </div>
-      </div>
-    </section>
-  </HomeEvents>
+  <HomeEvents query={query} home={home} homeErrorMessage={homeResult.ok ? '' : homeResult.message} />
 </BaseLayout>

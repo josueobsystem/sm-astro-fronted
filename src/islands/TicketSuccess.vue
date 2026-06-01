@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { formatDate, formatMoney, formatTime } from '@/lib/api';
+import { truncateWords } from '@/lib/text';
 import type { CheckoutSuccessPayload, CheckoutTicket } from '@/types/api';
 
 const props = defineProps<{
@@ -27,6 +28,10 @@ function pick(ticket: CheckoutTicket, keys: Array<keyof CheckoutTicket>, fallbac
 function downloadTicket(ticket: CheckoutTicket) {
   const pdfUrl = pick(ticket, ['pdf_url', 'pdfUrl'], '');
   window.open(pdfUrl || `${props.apiBaseUrl}/api/orders/tickets/${ticket.id}/pdf`, '_blank', 'noopener');
+}
+
+function ticketEventTitle(ticket: CheckoutTicket): string {
+  return truncateWords(pick(ticket, ['event_name', 'eventTitle'], 'Evento'), 20);
 }
 </script>
 
@@ -88,7 +93,7 @@ function downloadTicket(ticket: CheckoutTicket) {
 
         <article v-for="ticket in tickets" :key="ticket.id" class="ticket-preview">
           <div>
-            <strong>{{ pick(ticket, ['event_name', 'eventTitle'], 'Evento') }}</strong>
+            <strong>{{ ticketEventTitle(ticket) }}</strong>
             <div class="meta-line">
               {{ formatDate(pick(ticket, ['event_start_at', 'eventStartAt'], '')) }}
               {{ formatTime(pick(ticket, ['event_start_at', 'eventStartAt'], '')) }}

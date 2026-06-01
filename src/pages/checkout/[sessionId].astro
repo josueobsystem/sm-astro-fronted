@@ -15,6 +15,12 @@ if (!authStatus.authenticated) {
   return Astro.redirect(`/login?redirect=${encodeURIComponent(`${Astro.url.pathname}${Astro.url.search}`)}`, 302);
 }
 
+const initialContact = {
+  name: authStatus.user?.name || '',
+  email: authStatus.user?.email || '',
+  phone: authStatus.user?.person?.phone || '',
+};
+
 const reservationResult = reservationId
   ? await apiGet<CheckoutReservation>(
       `/api/orders/reservations/${reservationId}`,
@@ -40,6 +46,7 @@ if (reservationResult.ok && reservationResult.data.event_id) {
       siteUrl={getPublicSiteUrl(env)}
       reservation={reservationResult.data}
       event={event}
+      initialContact={initialContact}
       niubizCheckoutUrl={getNiubizCheckoutUrl(env)}
     />
   ) : (

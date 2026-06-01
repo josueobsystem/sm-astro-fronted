@@ -7,11 +7,20 @@ import { env } from 'cloudflare:workers';
 
 interface Props {
   query?: Record<string, string>;
+  home?: HomePayload | null;
+  homeErrorMessage?: string;
 }
 
-const { query = {} } = Astro.props as Props;
-const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
-const home = homeResult.ok ? homeResult.data : null;
+const { query = {}, home: initialHome, homeErrorMessage } = Astro.props as Props;
+
+let home = initialHome ?? null;
+let errorMessage = homeErrorMessage ?? '';
+
+if (!home) {
+  const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
+  home = homeResult.ok ? homeResult.data : null;
+  errorMessage = homeResult.ok ? '' : homeResult.message;
+}
 ---
 
 {home ? (
@@ -39,6 +48,6 @@ const home = homeResult.ok ? homeResult.data : null;
   <section class="shell notice-panel">
     <p class="eyebrow">API no disponible</p>
     <h1>No pudimos cargar los eventos.</h1>
-    <p class="lead">{homeResult.message}</p>
+    <p class="lead">{errorMessage || 'Intenta nuevamente en unos minutos.'}</p>
   </section>
 )}

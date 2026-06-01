@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { truncateWords } from '@/lib/text';
 
 type SearchEvent = {
   id: string;
@@ -58,6 +59,10 @@ function goToSearch() {
 
 function selectResult(eventItem: SearchEvent) {
   window.location.href = `/${eventItem.slug}`;
+}
+
+function displayEventTitle(value: string): string {
+  return truncateWords(value, 20);
 }
 
 function onSubmit(event: Event) {
@@ -192,7 +197,7 @@ onUnmounted(() => {
             @mouseenter="keyboardIndex = index"
             @click="selectResult(eventItem)"
           >
-            <strong>{{ eventItem.title }}</strong>
+            <strong>{{ displayEventTitle(eventItem.title) }}</strong>
             <span>{{ eventItem.venue_address || 'Evento' }}</span>
           </button>
         </li>

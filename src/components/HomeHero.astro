@@ -6,11 +6,20 @@ import { env } from 'cloudflare:workers';
 
 interface Props {
   query?: Record<string, string>;
+  home?: HomePayload | null;
+  homeErrorMessage?: string;
 }
 
-const { query = {} } = Astro.props as Props;
-const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
-const home = homeResult.ok ? homeResult.data : null;
+const { query = {}, home: initialHome, homeErrorMessage } = Astro.props as Props;
+
+let home = initialHome ?? null;
+let errorMessage = homeErrorMessage ?? '';
+
+if (!home) {
+  const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
+  home = homeResult.ok ? homeResult.data : null;
+  errorMessage = homeResult.ok ? '' : homeResult.message;
+}
 ---
 
 {home ? (
@@ -20,6 +29,11 @@ const home = homeResult.ok ? homeResult.data : null;
     <div class="hero-swiper-shell" aria-hidden="true">
       <div class="hero-slide-frame">
         <div class="hero-slide-overlay"></div>
+        {errorMessage && (
+          <p class="hero-slider-error">
+            {errorMessage}
+          </p>
+        )}
       </div>
     </div>
   </section>

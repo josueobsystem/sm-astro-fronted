@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import type { AuthUser } from '@/lib/auth';
+import { truncateWords } from '@/lib/text';
 
 type Ticket = {
   id: string;
@@ -194,6 +195,30 @@ function ticketStatusLabel(status?: string | null) {
   return labels[normalized] || normalized;
 }
 
+function ticketStatusClass(status?: string | null): string {
+  const normalized = String(status || 'VALID').toUpperCase();
+  const classes: Record<string, string> = {
+    VALID: 'is-valid',
+    USED: 'is-used',
+    CANCELLED: 'is-cancelled',
+    EXPIRED: 'is-expired',
+  };
+
+  return classes[normalized] || 'is-default';
+}
+
+function displayEventTitle(value?: string | null): string {
+  return truncateWords(value || 'Evento', 20) || 'Evento';
+}
+
+function isQrReady(ticket: Ticket): boolean {
+  return ticket.qr_pdf_status === 'ready' && !!ticket.pdf_url;
+}
+
+function isDocumentReady(ticket: Ticket): boolean {
+  return ticket.document_status === 'ready' && !!ticket.document_pdf_url;
+}
+
 function reservationTotal(reservation: Reservation) {
   return (reservation.items ?? []).reduce((sum, item) => {
     return sum + Number(item.total_price ?? item.price ?? 0) * Number(item.quantity || 0);
@@ -260,7 +285,38 @@ onMounted(() => {
             :class="{ 'is-active': activeTab === tab.id }"
             @click="selectTab(tab.id)"
           >
-            <span class="portal-tab-icon">{{ tab.icon }}</span>
+            <span class="portal-tab-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path
+                  v-if="tab.icon === 'user'"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.9"
+                  d="M15 19a4 4 0 0 0-8 0m8 0H5m10 0h4m-7-7a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+                />
+                <path
+                  v-else-if="tab.icon === 'ticket'"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.9"
+                  d="M4 9.2c1.5 0 2.7-1.2 2.7-2.7V6h10.6v.5c0 1.5 1.2 2.7 2.7 2.7V14c-1.5 0-2.7 1.2-2.7 2.7v.5H6.7v-.5c0-1.5-1.2-2.7-2.7-2.7V9.2Zm8-.9v7.4m0-7.4h0m0 7.4h0"
+                />
+                <path
+                  v-else-if="tab.icon === 'bookmark'"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.9"
+                  d="M7 5h10a1 1 0 0 1 1 1v13l-6-3.5L6 19V6a1 1 0 0 1 1-1Z"
+                />
+                <path
+                  v-else
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.9"
+                  d="M9 4h6m-9 4h12M7 20h10a2 2 0 0 0 2-2V8l-3-3H7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2Zm2-8h6m-6 4h4"
+                />
+              </svg>
+            </span>
             <span>{{ tab.name }}</span>
             <strong v-if="typeof tab.count === 'number'">{{ tab.count }}</strong>
           </button>
@@ -317,6 +373,13 @@ onMounted(() => {
 
           <div v-else class="portal-table-wrap">
             <table class="portal-table">
+              <colgroup>
+                <col class="portal-col-event" />
+                <col class="portal-col-date" />
+                <col class="portal-col-ticket" />
+                <col class="portal-col-status" />
+                <col class="portal-col-actions" />
+              </colgroup>
               <thead>
                 <tr>
                   <th>Evento</th>
@@ -328,28 +391,29 @@ onMounted(() => {
               </thead>
               <tbody>
                 <tr v-for="ticket in tickets" :key="ticket.id">
-                  <td>
-                    <strong>{{ ticket.event_name || 'Evento' }}</strong>
-                    <small v-if="ticket.purchased_at">Compra: {{ formatDate(ticket.purchased_at) }} {{ formatTime(ticket.purchased_at) }}</small>
+                  <td class="portal-cell-event">
+                    <strong class="ticket-event-name" :title="ticket.event_name || 'Evento'">{{ displayEventTitle(ticket.event_name) }}</strong>
+                    <small v-if="ticket.purchased_at" class="ticket-meta-line">Compra: {{ formatDate(ticket.purchased_at) }} {{ formatTime(ticket.purchased_at) }}</small>
                   </td>
-                  <td>
-                    {{ formatDate(ticket.event_date) }}
-                    <small>{{ formatTime(ticket.event_date) }}</small>
+                  <td class="portal-cell-date">
+                    <strong class="ticket-date-main">{{ formatDate(ticket.event_date) }}</strong>
+                    <small class="ticket-meta-line">{{ formatTime(ticket.event_date) || 'Hora por confirmar' }}</small>
                   </td>
-                  <td>
-                    <span class="portal-pill">{{ ticket.ticket_type || 'General' }}</span>
-                    <small>#{{ ticket.ticket_number || '-' }} · {{ formatMoney(ticket.price) }}</small>
+                  <td class="portal-cell-ticket">
+                    <span class="portal-pill" :title="ticket.ticket_type || 'General'">{{ ticket.ticket_type || 'General' }}</span>
+                    <small class="ticket-meta-line ticket-code" :title="`#${ticket.ticket_number || '-'} · ${formatMoney(ticket.price)}`">
+                      #{{ ticket.ticket_number || '-' }} · {{ formatMoney(ticket.price) }}
+                    </small>
                   </td>
-                  <td>
-                    <span class="portal-status">{{ ticketStatusLabel(ticket.status) }}</span>
+                  <td class="portal-cell-status">
+                    <span class="portal-status" :class="ticketStatusClass(ticket.status)">{{ ticketStatusLabel(ticket.status) }}</span>
                   </td>
-                  <td>
+                  <td class="portal-cell-actions">
                     <div class="portal-actions">
-                      <button type="button" @click="downloadTicket(ticket)">
-                        {{ ticket.qr_pdf_status === 'pending' ? 'Generar QR' : 'Descargar QR' }}
-                      </button>
+                      <button v-if="isQrReady(ticket)" type="button" @click="downloadTicket(ticket)">Descargar QR</button>
+                      <span v-else class="portal-doc-pending">QR pendiente</span>
                       <button
-                        v-if="ticket.document_pdf_url"
+                        v-if="isDocumentReady(ticket)"
                         type="button"
                         class="is-secondary"
                         @click="downloadDocument(ticket)"
@@ -414,7 +478,7 @@ onMounted(() => {
           <div v-if="serviceRequests.length === 0" class="portal-empty">
             <h3>Aún no tienes solicitudes</h3>
             <p>Cuando registres una solicitud de servicio, podrás seguir su estado desde aquí.</p>
-            <a href="/#solicitud-evento">Nueva Solicitud</a>
+            <a href="/service-request">Nueva Solicitud</a>
           </div>
 
           <div v-else class="request-grid">

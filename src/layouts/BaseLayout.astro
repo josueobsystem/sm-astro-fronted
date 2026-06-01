@@ -11,6 +11,10 @@ interface Props {
   image?: string | null;
   chrome?: boolean;
   footer?: boolean;
+  preloadImages?: Array<{
+    href: string;
+    media?: string;
+  }>;
 }
 
 const {
@@ -19,6 +23,7 @@ const {
   image = null,
   chrome = true,
   footer = chrome,
+  preloadImages = [],
 } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
 const logoUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png';
@@ -44,11 +49,23 @@ const authStatus = chrome
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" as="style" />
+    {preloadImages.map((resource) => (
+      <link
+        rel="preload"
+        as="image"
+        href={resource.href}
+        media={resource.media}
+        fetchpriority="high"
+      />
+    ))}
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
   </head>
   <body class:list={[!chrome && 'no-chrome']}>
     {chrome && (
-      <header class="site-header navbar-sticky">
+      <header
+        id="primary-site-header"
+        class="site-header navbar-sticky"
+      >
         <nav class="site-nav shell" aria-label="Principal">
           <a class="brand" href="/" aria-label="Inicio - Sonia Morales">
             <span class="brand-logo">
@@ -102,9 +119,9 @@ const authStatus = chrome
           <div>
             <h4 class="footer-title">Empresa</h4>
             <div class="footer-links">
-              <a href="/#solicitud-evento">Bodas</a>
-              <a href="/#solicitud-evento">Fiestas Privadas</a>
-              <a href="/#solicitud-evento">Eventos Corporativos</a>
+              <a href="/service-request">Bodas</a>
+              <a href="/service-request">Fiestas Privadas</a>
+              <a href="/service-request">Eventos Corporativos</a>
             </div>
           </div>
 

@@ -1,0 +1,19 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PasswordRecoveryForm from '@/islands/PasswordRecoveryForm.vue';
+
+const visualUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web/login_web_main.webp';
+const token = Astro.params.token || '';
+const email = (Astro.url.searchParams.get('email') || '').trim();
+---
+
+<BaseLayout title="Nueva contraseña - Sonia Morales" description="Define una nueva contraseña para tu cuenta." chrome={false}>
+  <section class="auth-page">
+    <div class="auth-visual">
+      <img src={visualUrl} alt="Sonia Morales visual" />
+    </div>
+    <div class="auth-panel">
+      <PasswordRecoveryForm client:load mode="reset" token={token} initialEmail={email} loginHref="/login" />
+    </div>
+  </section>
+</BaseLayout>

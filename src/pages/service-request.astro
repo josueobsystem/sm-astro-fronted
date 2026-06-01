@@ -1,0 +1,27 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ServiceRequestForm from '@/islands/ServiceRequestForm.vue';
+---
+
+<BaseLayout
+  title="Solicitud de evento - Sonia Morales"
+  description="Solicita un evento privado o corporativo con Sonia Morales."
+>
+  <section class="section" id="solicitud-evento">
+    <div class="shell notice-panel" style="margin-top:0">
+      <p class="eyebrow">Eventos privados y corporativos</p>
+      <h1 class="display-title" style="font-size: clamp(2rem, 5vw, 3.6rem); line-height:1.02; max-width: 760px;">
+        Formulario de solicitud de evento
+      </h1>
+      <p class="lead">
+        Completa los datos del evento para que nuestro equipo te contacte con disponibilidad y propuesta.
+      </p>
+      <div class="notice-panel__actions">
+        <a class="ghost-button" href="/#eventos">Volver a eventos</a>
+      </div>
+    </div>
+    <div class="shell" style="margin-top: 22px;">
+      <ServiceRequestForm client:load />
+    </div>
+  </section>
+</BaseLayout>

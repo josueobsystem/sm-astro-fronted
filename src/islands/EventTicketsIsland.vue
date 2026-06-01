@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import AuthForm from '@/islands/AuthForm.vue';
 import { formatMoney } from '@/lib/api';
 import type { PublicTicket } from '@/types/api';
 
@@ -14,6 +15,9 @@ const props = defineProps<{
 const quantities = reactive<Record<string, number>>({});
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
+const isAuthenticated = ref(Boolean(props.initialAuthenticated));
+const loginModalOpen = ref(false);
+const isMounted = ref(false);
 
 const activeTickets = computed(() => props.tickets.filter((ticket) => {
   return ticket.is_active && Number(ticket.stock_available || 0) > 0;
@@ -27,6 +31,28 @@ const selectedItems = computed(() => activeTickets.value
 const total = computed(() => activeTickets.value.reduce((sum, ticket) => {
   return sum + Number(ticket.final_price || ticket.price || 0) * Number(quantities[ticket.id] || 0);
 }, 0));
+
+const redirectTarget = computed(() => {
+  if (typeof window === 'undefined') {
+    return '/';
+  }
+
+  return `${window.location.pathname}${window.location.search}`;
+});
+
+function openLoginModal() {
+  loginModalOpen.value = true;
+}
+
+function closeLoginModal() {
+  loginModalOpen.value = false;
+}
+
+function handleLoginSuccess() {
+  isAuthenticated.value = true;
+  closeLoginModal();
+  void reserve();
+}
 
 function updateQuantity(ticketId: string, delta: number, max: number) {
   const limit = Math.min(Math.max(Number(max || 0), 0), 10);
@@ -48,8 +74,8 @@ function getSessionId(): string {
 async function reserve() {
   errorMessage.value = null;
 
-  if (!props.initialAuthenticated) {
-    window.location.href = props.loginUrl || `/login?redirect=${encodeURIComponent(window.location.pathname + window.location.search)}`;
+  if (!isAuthenticated.value) {
+    openLoginModal();
     return;
   }
 
@@ -93,6 +119,40 @@ async function reserve() {
     loading.value = false;
   }
 }
+
+function onModalKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    closeLoginModal();
+  }
+}
+
+watch(loginModalOpen, (isOpen) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  document.body.classList.toggle('modal-open', isOpen);
+
+  if (isOpen) {
+    document.addEventListener('keydown', onModalKeydown);
+    return;
+  }
+
+  document.removeEventListener('keydown', onModalKeydown);
+});
+
+onMounted(() => {
+  isMounted.value = true;
+});
+
+onBeforeUnmount(() => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
+  document.body.classList.remove('modal-open');
+  document.removeEventListener('keydown', onModalKeydown);
+});
 </script>
 
 <template>
@@ -111,7 +171,6 @@ async function reserve() {
         <p class="ticket-name">{{ ticket.name }}</p>
         <div class="ticket-price">
           {{ formatMoney(ticket.final_price || ticket.price) }}
-          <span v-if="ticket.stock_available"> · {{ ticket.stock_available }} disponibles</span>
         </div>
       </div>
       <div class="qty-control">
@@ -124,7 +183,31 @@ async function reserve() {
     <p v-if="errorMessage" class="checkout-error">{{ errorMessage }}</p>
 
     <button class="ticket-reserve-button" type="button" :disabled="loading || activeTickets.length === 0" @click="reserve">
-      {{ loading ? 'Procesando...' : (initialAuthenticated ? 'RESERVAR ENTRADAS' : 'INICIA SESIÓN PARA COMPRAR') }}
+      {{ loading ? 'Procesando...' : (isAuthenticated ? 'RESERVAR ENTRADAS' : 'INICIA SESIÓN PARA COMPRAR') }}
     </button>
+
+    <Teleport v-if="isMounted" to="body">
+      <div v-if="loginModalOpen" class="event-login-modal" role="dialog" aria-modal="true" aria-label="Iniciar sesión para continuar" @click.self="closeLoginModal">
+        <div class="event-login-modal__panel">
+          <button class="event-login-modal__close" type="button" aria-label="Cerrar modal de inicio de sesión" @click="closeLoginModal">
+            ×
+          </button>
+
+          <AuthForm
+            mode="login"
+            :api-base-url="apiBaseUrl"
+            :redirect-to="redirectTarget"
+            success-mode="emit"
+            :inline-mode="true"
+            @success="handleLoginSuccess"
+          />
+
+          <p class="event-login-modal__hint">
+            ¿Prefieres pantalla completa?
+            <a :href="loginUrl">Ir al login</a>
+          </p>
+        </div>
+      </div>
+    </Teleport>
   </section>
 </template>

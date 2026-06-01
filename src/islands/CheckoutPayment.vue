@@ -1,13 +1,19 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { formatDate, formatMoney, formatTime } from '@/lib/api';
-import type { CheckoutReservation, PublicEvent } from '@/types/api';
+import { truncateWords } from '@/lib/text';
+import type { CheckoutReservation, PublicEvent, ReservationItem } from '@/types/api';
 
 const props = defineProps<{
   apiBaseUrl: string;
   siteUrl: string;
   reservation: CheckoutReservation;
   event: PublicEvent | null;
+  initialContact?: {
+    name?: string | null;
+    email?: string | null;
+    phone?: string | null;
+  };
   niubizCheckoutUrl: string;
 }>();
 
@@ -35,11 +41,31 @@ const totalTickets = computed(() => props.reservation.items.reduce((sum, item) =
   return sum + Number(item.quantity || 0);
 }, 0));
 
+function resolveUnitProcessingFee(item: ReservationItem, unitPrice: number): number {
+  const explicitFee = Number(item.processing_fee_amount || 0);
+  if (explicitFee > 0) {
+    return roundMoney(explicitFee);
+  }
+
+  const unitTotal = Number(item.total_price || 0);
+  if (unitTotal > unitPrice) {
+    return roundMoney(unitTotal - unitPrice);
+  }
+
+  if (unitPrice <= 0) {
+    return 0;
+  }
+
+  return roundMoney(unitPrice * DEFAULT_PROCESSING_FEE_TOTAL_RATE);
+}
+
 const ticketLabels = computed(() => props.reservation.items.map((item) => {
   const quantity = Number(item.quantity || 0);
   const unitPrice = Number(item.price || 0);
-  const lineTotal = Number(item.total_price ?? unitPrice * quantity);
-  const lineFee = Number(item.processing_fee_amount || 0);
+  const unitFee = resolveUnitProcessingFee(item, unitPrice);
+  const lineFee = roundMoney(unitFee * quantity);
+  const lineSubtotal = roundMoney(unitPrice * quantity);
+  const lineTotal = roundMoney(lineSubtotal + lineFee);
 
   return {
     label: `${quantity} ${quantity === 1 ? 'entrada' : 'entradas'} - ${item.name || 'Entrada'}`,
@@ -54,28 +80,24 @@ const ticketLabels = computed(() => props.reservation.items.map((item) => {
 const concertAmount = computed(() => props.reservation.items.reduce((sum, item) => {
   const quantity = Number(item.quantity || 0);
   const unitPrice = Number(item.price || 0);
-  const lineTotal = Number(item.total_price ?? unitPrice * quantity);
 
-  return sum + lineTotal;
+  return sum + roundMoney(unitPrice * quantity);
 }, 0));
 
 const processingFeeAmount = computed(() => {
   const fromItems = props.reservation.items.reduce((sum, item) => {
-    return sum + Number(item.processing_fee_amount || 0);
+    const quantity = Number(item.quantity || 0);
+    const unitPrice = Number(item.price || 0);
+    const unitFee = resolveUnitProcessingFee(item, unitPrice);
+
+    return sum + roundMoney(unitFee * quantity);
   }, 0);
 
-  if (fromItems > 0) {
-    return roundMoney(fromItems);
-  }
-
-  if (concertAmount.value <= 0) {
-    return 0;
-  }
-
-  return roundMoney(concertAmount.value * DEFAULT_PROCESSING_FEE_TOTAL_RATE);
+  return roundMoney(fromItems);
 });
 
-const total = computed(() => concertAmount.value + processingFeeAmount.value);
+const total = computed(() => roundMoney(concertAmount.value + processingFeeAmount.value));
+const eventDisplayTitle = computed(() => truncateWords(props.event?.title || 'Evento Sonia Morales', 20));
 const timerDisplay = computed(() => {
   const minutes = Math.floor(secondsLeft.value / 60);
   const seconds = secondsLeft.value % 60;
@@ -133,6 +155,42 @@ function loadScript(src: string): Promise<void> {
 
 function closeCheckout() {
   window.location.href = '/';
+}
+
+function fillContactFromSession() {
+  const initialName = String(props.initialContact?.name || '').trim();
+  const initialEmail = String(props.initialContact?.email || '').trim();
+  const initialPhone = String(props.initialContact?.phone || '').trim();
+
+  if (!name.value && initialName) {
+    name.value = initialName;
+  }
+
+  if (!email.value && initialEmail) {
+    email.value = initialEmail;
+  }
+
+  if (!phone.value && initialPhone) {
+    phone.value = initialPhone;
+  }
+}
+
+async function ensureAuthenticatedSession(): Promise<boolean> {
+  try {
+    const response = await fetch('/api/auth/status', {
+      credentials: 'include',
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+      cache: 'no-store',
+    });
+    const payload = await response.json().catch(() => null) as { authenticated?: boolean } | null;
+
+    return Boolean(payload?.authenticated);
+  } catch {
+    return false;
+  }
 }
 
 function buildFrontendUrl(path: string): string {
@@ -205,6 +263,17 @@ async function startPayment() {
 }
 
 onMounted(() => {
+  fillContactFromSession();
+
+  void ensureAuthenticatedSession().then((authenticated) => {
+    if (authenticated) {
+      return;
+    }
+
+    const redirect = `${window.location.pathname}${window.location.search}`;
+    window.location.href = `/login?redirect=${encodeURIComponent(redirect)}`;
+  });
+
   timer = setInterval(() => {
     secondsLeft.value = secondsUntilExpiration();
 
@@ -389,7 +458,7 @@ onUnmounted(() => {
                   <img :src="event?.banner_sm_url || event?.banner_url || '/event-placeholder.svg'" :alt="event?.title || 'Evento'" />
                 </div>
                 <div>
-                  <h3 class="sidebar-event-title">{{ event?.title || 'Evento Sonia Morales' }}</h3>
+                  <h3 class="sidebar-event-title">{{ eventDisplayTitle }}</h3>
                   <div class="sidebar-event-date">
                     <span class="sidebar-meta-item">{{ formatDate(event?.start_at || null) }}</span>
                     <span class="sidebar-meta-item">{{ formatTime(event?.start_at || null) }}</span>

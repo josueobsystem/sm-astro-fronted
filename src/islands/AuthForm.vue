@@ -9,10 +9,20 @@ type LocationOption = {
   name?: string | null;
 };
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   mode: 'login' | 'register';
   apiBaseUrl: string;
-  redirectTo: string;
+  redirectTo?: string;
+  successMode?: 'redirect' | 'emit';
+  inlineMode?: boolean;
+}>(), {
+  redirectTo: '/',
+  successMode: 'redirect',
+  inlineMode: false,
+});
+
+const emit = defineEmits<{
+  (event: 'success'): void;
 }>();
 
 const email = ref('');
@@ -38,8 +48,8 @@ const loading = ref(false);
 const errorMessage = ref('');
 
 const isRegister = computed(() => props.mode === 'register');
-const googleUrl = computed(() => `${props.apiBaseUrl}/auth/google`);
 const redirectQuery = computed(() => `redirect=${encodeURIComponent(props.redirectTo || '/')}`);
+const googleUrl = computed(() => `${props.apiBaseUrl}/auth/google?${redirectQuery.value}`);
 const loginHref = computed(() => `/login?${redirectQuery.value}`);
 const registerHref = computed(() => `/register?${redirectQuery.value}`);
 const registerCityEnabled = computed(() => isRegister.value && country.value === 'PE');
@@ -292,6 +302,11 @@ async function submit() {
       throw new Error(normalizeError(firstValidation || payload.message || 'No pudimos completar la solicitud.'));
     }
 
+    if (props.successMode === 'emit') {
+      emit('success');
+      return;
+    }
+
     window.location.href = props.redirectTo || '/';
   } catch (error) {
     errorMessage.value = normalizeError(error instanceof Error ? error.message : 'No pudimos completar la solicitud.');
@@ -316,7 +331,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="auth-card" :class="{ 'auth-card--scroll': isRegister }">
+  <div class="auth-card" :class="{ 'auth-card--scroll': isRegister, 'auth-card--inline': props.inlineMode }">
     <div class="auth-logo" :class="{ 'auth-logo--register': isRegister }">
       <img
         src="https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png"
