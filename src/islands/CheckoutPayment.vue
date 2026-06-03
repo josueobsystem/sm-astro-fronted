@@ -13,6 +13,7 @@ const props = defineProps<{
     name?: string | null;
     email?: string | null;
     phone?: string | null;
+    personId?: string | null;
   };
   niubizCheckoutUrl: string;
 }>();
@@ -36,6 +37,8 @@ const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const secondsLeft = ref(secondsUntilExpiration());
 let timer: ReturnType<typeof setInterval> | null = null;
+
+const checkoutPersonId = computed(() => String(props.initialContact?.personId || '').trim());
 
 const totalTickets = computed(() => props.reservation.items.reduce((sum, item) => {
   return sum + Number(item.quantity || 0);
@@ -213,8 +216,9 @@ async function startPayment() {
   loading.value = true;
 
   try {
-    const response = await fetch(`${props.apiBaseUrl}/api/orders/checkout/session`, {
+    const response = await fetch('/api/orders/checkout/session', {
       method: 'POST',
+      credentials: 'include',
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
@@ -224,6 +228,7 @@ async function startPayment() {
         customer_email: email.value,
         customer_name: name.value,
         customer_phone: phone.value || null,
+        person_id: checkoutPersonId.value || null,
         payment_method: selectedPaymentMethod.value,
         billing_type: billingType.value,
         ruc: billingType.value === 'factura' ? ruc.value : null,
@@ -242,7 +247,15 @@ async function startPayment() {
     const data = envelope.data;
     const successPath = `/checkout/success?reservation_id=${encodeURIComponent(props.reservation.id)}&purchase_number=${encodeURIComponent(data.purchase_number)}&billing_type=${encodeURIComponent(billingType.value)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}`;
     const frontendSuccessUrl = buildFrontendUrl(successPath);
-    const action = `${props.apiBaseUrl}/orders/checkout/confirm?reservation_id=${encodeURIComponent(props.reservation.id)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}&frontend_success_url=${encodeURIComponent(frontendSuccessUrl)}`;
+    const actionUrl = new URL('/orders/checkout/confirm', props.apiBaseUrl);
+    actionUrl.searchParams.set('reservation_id', props.reservation.id);
+    actionUrl.searchParams.set('payment_method', selectedPaymentMethod.value);
+    actionUrl.searchParams.set('billing_type', billingType.value);
+    actionUrl.searchParams.set('frontend_success_url', frontendSuccessUrl);
+
+    if (checkoutPersonId.value) {
+      actionUrl.searchParams.set('person_id', checkoutPersonId.value);
+    }
 
     window.VisanetCheckout.configure({
       sessiontoken: data.session_token,
@@ -253,7 +266,7 @@ async function startPayment() {
       merchantlogo: buildFrontendUrl(NIUBIZ_MERCHANT_LOGO_PATH),
       merchantname: 'Sonia Morales',
       timeouturl: buildFrontendUrl('/checkout/timeout'),
-      action,
+      action: actionUrl.toString(),
     });
     window.VisanetCheckout.open();
   } catch (error) {

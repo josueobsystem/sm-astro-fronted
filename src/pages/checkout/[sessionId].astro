@@ -19,6 +19,7 @@ const initialContact = {
   name: authStatus.user?.name || '',
   email: authStatus.user?.email || '',
   phone: authStatus.user?.person?.phone || '',
+  personId: authStatus.user?.person?.id ? String(authStatus.user.person.id) : '',
 };
 
 const reservationResult = reservationId
