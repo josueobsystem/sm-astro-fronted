@@ -1,4 +1,4 @@
-type EnvLike = Record<string, string | undefined> | undefined;
+export type EnvLike = Record<string, string | undefined> | undefined;
 
 export function getApiBaseUrl(env?: EnvLike): string {
   const runtimeUrl = env?.PUBLIC_API_BASE_URL;
@@ -21,4 +21,11 @@ export function getNiubizCheckoutUrl(env?: EnvLike): string {
   return String(
     runtimeUrl || buildUrl || 'https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js',
   );
+}
+
+export function getWorkerCfAuthorizationToken(env?: EnvLike): string {
+  const runtimeToken = env?.VITE_WORKER_CF_AUTHORIZATION_TOKEN;
+  const buildToken = import.meta.env.VITE_WORKER_CF_AUTHORIZATION_TOKEN;
+
+  return String(runtimeToken || buildToken || '').trim();
 }

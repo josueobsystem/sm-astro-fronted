@@ -1,5 +1,5 @@
 import { getApiBaseUrl } from './config';
-import { fetchWithTimeout } from './fetch';
+import { fetchBackendWithTimeout } from './backend';
 
 type RuntimeEnv = Parameters<typeof getApiBaseUrl>[0];
 
@@ -37,7 +37,7 @@ export async function getAuthStatus(request: Request, env?: RuntimeEnv): Promise
   }
 
   try {
-    const response = await fetchWithTimeout(`${getApiBaseUrl(env)}/auth-status`, {
+    const response = await fetchBackendWithTimeout(`${getApiBaseUrl(env)}/auth-status`, env, {
       headers: {
         Accept: 'application/json',
         Cookie: cookie,

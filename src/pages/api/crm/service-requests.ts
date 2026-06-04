@@ -1,10 +1,11 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
+import { fetchBackend } from '@/lib/backend';
 import { proxyJsonResponse } from '@/lib/proxy';
 
 export const POST: APIRoute = async ({ request }) => {
-  const response = await fetch(`${getApiBaseUrl(env)}/api/crm/service-requests`, {
+  const response = await fetchBackend(`${getApiBaseUrl(env)}/api/crm/service-requests`, env, {
     method: 'POST',
     headers: {
       Accept: 'application/json',

@@ -27,7 +27,7 @@ function pick(ticket: CheckoutTicket, keys: Array<keyof CheckoutTicket>, fallbac
 
 function downloadTicket(ticket: CheckoutTicket) {
   const pdfUrl = pick(ticket, ['pdf_url', 'pdfUrl'], '');
-  window.open(pdfUrl || `${props.apiBaseUrl}/api/orders/tickets/${ticket.id}/pdf`, '_blank', 'noopener');
+  window.open(pdfUrl || `/api/orders/tickets/${encodeURIComponent(ticket.id)}/pdf`, '_blank', 'noopener');
 }
 
 function ticketEventTitle(ticket: CheckoutTicket): string {

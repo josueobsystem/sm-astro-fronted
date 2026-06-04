@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
+import { fetchBackend } from '@/lib/backend';
 import { proxyJsonResponse } from '@/lib/proxy';
 
 export const GET: APIRoute = async ({ params, request }) => {
@@ -19,7 +20,7 @@ export const GET: APIRoute = async ({ params, request }) => {
     });
   }
 
-  const response = await fetch(`${getApiBaseUrl(env)}/api/locations/provinces/${encodeURIComponent(departmentId)}`, {
+  const response = await fetchBackend(`${getApiBaseUrl(env)}/api/locations/provinces/${encodeURIComponent(departmentId)}`, env, {
     headers: {
       Accept: 'application/json',
       Cookie: request.headers.get('cookie') || '',
