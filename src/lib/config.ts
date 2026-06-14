@@ -22,10 +22,3 @@ export function getNiubizCheckoutUrl(env?: EnvLike): string {
     runtimeUrl || buildUrl || 'https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js',
   );
 }
-
-export function getWorkerCfAuthorizationToken(env?: EnvLike): string {
-  const runtimeToken = env?.VITE_WORKER_CF_AUTHORIZATION_TOKEN;
-  const buildToken = import.meta.env.VITE_WORKER_CF_AUTHORIZATION_TOKEN;
-
-  return String(runtimeToken || buildToken || '').trim();
-}
