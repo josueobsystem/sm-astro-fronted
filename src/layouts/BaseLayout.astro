@@ -4,6 +4,7 @@ import { env } from 'cloudflare:workers';
 import HeaderUserMenu from '../islands/HeaderUserMenu.vue';
 import HeaderEventSearch from '../islands/HeaderEventSearch.vue';
 import { getAuthStatus } from '@/lib/auth';
+import { getIndexableSiteUrl, shouldIndexRequestHost } from '@/lib/config';
 
 interface Props {
   title: string;
@@ -25,11 +26,17 @@ const {
   footer = chrome,
   preloadImages = [],
 } = Astro.props;
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin).toString();
+const indexableSiteUrl = getIndexableSiteUrl(env);
+const canonical = new URL(Astro.url.pathname, indexableSiteUrl).toString();
+const shouldIndex = shouldIndexRequestHost(Astro.url, env);
 const logoUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png';
 const authStatus = chrome
   ? await getAuthStatus(Astro.request, env)
   : { authenticated: false, user_id: null, user: null, permissions: [], actor_type: null };
+
+if (!shouldIndex) {
+  Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive');
+}
 ---
 
 <!doctype html>
@@ -40,6 +47,8 @@ const authStatus = chrome
     <title>{title}</title>
     <meta name="description" content={description} />
     <link rel="canonical" href={canonical} />
+    {!shouldIndex && <meta name="robots" content="noindex, nofollow, noarchive" />}
+    {!shouldIndex && <meta name="googlebot" content="noindex, nofollow, noarchive" />}
     <meta name="theme-color" content="#ec4899" />
     <meta property="og:type" content="website" />
     <meta property="og:title" content={title} />
