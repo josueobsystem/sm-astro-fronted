@@ -736,6 +736,12 @@ select {
   box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12);
 }
 
+@media (min-width: 1700px) {
+  .hero-swiper-shell {
+    height: clamp(500px, calc((100vw * 700 / 1700) - 200px), 700px);
+  }
+}
+
 .hero-swiper {
   position: relative;
   height: 100%;
