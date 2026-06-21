@@ -11,10 +11,12 @@ type LocationOption = {
 
 const props = withDefaults(defineProps<{
   mode: 'login' | 'register';
+  apiBaseUrl?: string;
   redirectTo?: string;
   successMode?: 'redirect' | 'emit';
   inlineMode?: boolean;
 }>(), {
+  apiBaseUrl: '',
   redirectTo: '/',
   successMode: 'redirect',
   inlineMode: false,
@@ -48,7 +50,23 @@ const errorMessage = ref('');
 
 const isRegister = computed(() => props.mode === 'register');
 const redirectQuery = computed(() => `redirect=${encodeURIComponent(props.redirectTo || '/')}`);
-const googleUrl = computed(() => `/api/auth/google?${redirectQuery.value}`);
+const backendApiBaseUrl = computed(() => props.apiBaseUrl || import.meta.env.PUBLIC_API_BASE_URL || '');
+const googleUrl = computed(() => {
+  const backendUrl = backendApiBaseUrl.value.trim();
+
+  if (!backendUrl) {
+    return `/api/auth/google?${redirectQuery.value}`;
+  }
+
+  try {
+    const url = new URL('/api/auth/google', backendUrl.endsWith('/') ? backendUrl : `${backendUrl}/`);
+    url.searchParams.set('redirect', props.redirectTo || '/');
+
+    return url.toString();
+  } catch {
+    return `/api/auth/google?${redirectQuery.value}`;
+  }
+});
 const loginHref = computed(() => `/login?${redirectQuery.value}`);
 const registerHref = computed(() => `/register?${redirectQuery.value}`);
 const registerCityEnabled = computed(() => isRegister.value && country.value === 'PE');

@@ -2,6 +2,8 @@
 import BaseLayout from '@/layouts/BaseLayout.astro';
 import AuthForm from '@/islands/AuthForm.vue';
 import { sanitizeRedirect } from '@/lib/auth';
+import { getApiBaseUrl } from '@/lib/config';
+import { env } from 'cloudflare:workers';
 
 const visualUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web/login_web_main.webp';
 const redirectTo = sanitizeRedirect(Astro.url.searchParams.get('redirect'));
@@ -13,7 +15,7 @@ const redirectTo = sanitizeRedirect(Astro.url.searchParams.get('redirect'));
       <img src={visualUrl} alt="Sonia Morales visual" />
     </div>
     <div class="auth-panel">
-      <AuthForm client:load mode="register" redirectTo={redirectTo} />
+      <AuthForm client:load mode="register" redirectTo={redirectTo} apiBaseUrl={getApiBaseUrl(env)} />
     </div>
   </section>
 </BaseLayout>
