@@ -11,7 +11,6 @@ type LocationOption = {
 
 const props = withDefaults(defineProps<{
   mode: 'login' | 'register';
-  apiBaseUrl: string;
   redirectTo?: string;
   successMode?: 'redirect' | 'emit';
   inlineMode?: boolean;
@@ -49,7 +48,7 @@ const errorMessage = ref('');
 
 const isRegister = computed(() => props.mode === 'register');
 const redirectQuery = computed(() => `redirect=${encodeURIComponent(props.redirectTo || '/')}`);
-const googleUrl = computed(() => `${props.apiBaseUrl}/auth/google?${redirectQuery.value}`);
+const googleUrl = computed(() => `/api/auth/google?${redirectQuery.value}`);
 const loginHref = computed(() => `/login?${redirectQuery.value}`);
 const registerHref = computed(() => `/register?${redirectQuery.value}`);
 const registerCityEnabled = computed(() => isRegister.value && country.value === 'PE');

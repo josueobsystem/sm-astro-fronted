@@ -10,8 +10,11 @@ interface Props {
   title: string;
   description?: string;
   image?: string | null;
+  keywords?: string[];
+  ogType?: string;
   chrome?: boolean;
   footer?: boolean;
+  structuredData?: Record<string, unknown> | Array<Record<string, unknown>>;
   preloadImages?: Array<{
     href: string;
     media?: string;
@@ -22,14 +25,18 @@ const {
   title,
   description = 'Entradas oficiales, conciertos y experiencias en vivo de Sonia Morales.',
   image = null,
+  keywords = [],
+  ogType = 'website',
   chrome = true,
   footer = chrome,
+  structuredData = [],
   preloadImages = [],
 } = Astro.props;
 const indexableSiteUrl = getIndexableSiteUrl(env);
 const canonical = new URL(Astro.url.pathname, indexableSiteUrl).toString();
 const shouldIndex = shouldIndexRequestHost(Astro.url, env);
 const logoUrl = 'https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png';
+const structuredDataEntries = Array.isArray(structuredData) ? structuredData : [structuredData];
 const authStatus = chrome
   ? await getAuthStatus(Astro.request, env)
   : { authenticated: false, user_id: null, user: null, permissions: [], actor_type: null };
@@ -46,15 +53,21 @@ if (!shouldIndex) {
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {keywords.length > 0 && <meta name="keywords" content={keywords.join(', ')} />}
     <link rel="canonical" href={canonical} />
     {!shouldIndex && <meta name="robots" content="noindex, nofollow, noarchive" />}
     {!shouldIndex && <meta name="googlebot" content="noindex, nofollow, noarchive" />}
     <meta name="theme-color" content="#ec4899" />
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Sonia Morales" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {image && <meta name="twitter:image" content={image} />}
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" as="style" />
@@ -68,6 +81,9 @@ if (!shouldIndex) {
       />
     ))}
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    {structuredDataEntries
+      .filter((entry) => Object.keys(entry).length > 0)
+      .map((entry) => <script type="application/ld+json" set:html={JSON.stringify(entry)} />)}
   </head>
   <body class:list={[!chrome && 'no-chrome']}>
     {chrome && (

@@ -3,19 +3,29 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import EventTicketsIsland from '@/islands/EventTicketsIsland.vue';
 import { apiGet, formatTime } from '@/lib/api';
 import { getAuthStatus, loginUrlFor } from '@/lib/auth';
-import { getApiBaseUrl } from '@/lib/config';
+import { getApiBaseUrl, getIndexableSiteUrl } from '@/lib/config';
 import { sanitizeEventHtml } from '@/lib/html';
 import type { PublicEvent } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
 const { slug } = Astro.params;
 const authStatus = await getAuthStatus(Astro.request, env);
+const indexableSiteUrl = getIndexableSiteUrl(env);
 const eventResult = await apiGet<{ event: PublicEvent; seo: { title: string; description: string; image?: string | null } }>(
   `/api/public/events/${slug}`,
   env,
 );
 const payload = eventResult.ok ? eventResult.data : null;
 const event = payload?.event;
+const eventSeoKeywords = event
+  ? [
+      `Sonia Morales ${event.title}`,
+      `${event.title} entradas`,
+      `${event.title} tickets`,
+      'conciertos Sonia Morales',
+      'entradas oficiales',
+    ]
+  : ['Sonia Morales', 'eventos oficiales', 'compra de entradas'];
 const longDate = (value: string | null | undefined) => {
   if (!value) return 'Por confirmar';
 
@@ -28,12 +38,53 @@ const longDate = (value: string | null | undefined) => {
 };
 const artistInitials = (name: string) => name.slice(0, 2).toUpperCase();
 const eventDescription = sanitizeEventHtml(event?.description || '');
+const eventStructuredData = event
+  ? {
+      '@context': 'https://schema.org',
+      '@type': 'Event',
+      name: event.title,
+      description: payload?.seo.description || event.title,
+      image: [event.banner_url || event.banner_sm_url || `${indexableSiteUrl}/event-placeholder.svg`].filter(Boolean),
+      startDate: event.start_at || undefined,
+      endDate: event.end_at || undefined,
+      eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+      eventStatus: 'https://schema.org/EventScheduled',
+      location: {
+        '@type': 'Place',
+        name: event.venue_address || event.title,
+        address: event.venue_address || 'Peru',
+      },
+      performer: {
+        '@type': 'Person',
+        name: 'Sonia Morales',
+      },
+      organizer: {
+        '@type': 'Organization',
+        name: 'Sonia Morales',
+        url: `${indexableSiteUrl}/`,
+      },
+      offers: (event.tickets || []).map((ticket) => ({
+        '@type': 'Offer',
+        price: ticket.final_price,
+        priceCurrency: event.currency || 'PEN',
+        availability:
+          ticket.stock_available > 0
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/SoldOut',
+        url: `${indexableSiteUrl}${event.url}`,
+        validFrom: ticket.sales_start_at || event.start_at || undefined,
+      })),
+      url: `${indexableSiteUrl}${event.url}`,
+    }
+  : null;
 ---
 
 <BaseLayout
   title={payload?.seo.title || 'Evento no encontrado'}
   description={payload?.seo.description || 'No pudimos encontrar el evento solicitado.'}
   image={payload?.seo.image}
+  keywords={eventSeoKeywords}
+  structuredData={eventStructuredData ? [eventStructuredData] : []}
 >
   {event ? (
     <section class="event-page">
