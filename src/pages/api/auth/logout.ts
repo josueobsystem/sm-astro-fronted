@@ -2,29 +2,33 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
 import { fetchBackend } from '@/lib/backend';
-import { proxyJsonResponse } from '@/lib/proxy';
+import { readClientToken, serializeClearedClientTokenCookie } from '@/lib/auth-session';
 
-export const POST: APIRoute = async ({ request }) => {
-  const apiBaseUrl = getApiBaseUrl(env);
-  const cookie = request.headers.get('cookie') || '';
-
-  const csrfResponse = await fetchBackend(`${apiBaseUrl}/csrf-token`, env, {
-    headers: {
-      Accept: 'application/json',
-      Cookie: cookie,
-    },
+export const POST: APIRoute = async ({ request, url }) => {
+  const token = readClientToken(request);
+  const headers = new Headers({
+    'content-type': 'application/json',
   });
-  const csrfPayload = await csrfResponse.json().catch(() => ({ token: '' })) as { token?: string };
+  headers.append('set-cookie', serializeClearedClientTokenCookie(url));
 
-  const response = await fetchBackend(`${apiBaseUrl}/logout`, env, {
+  if (!token) {
+    return new Response(JSON.stringify({
+      status: 'success',
+      message: 'Successfully logged out',
+      data: null,
+    }), { status: 200, headers });
+  }
+
+  const response = await fetchBackend(`${getApiBaseUrl(env)}/api/client-auth/logout`, env, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
-      'X-CSRF-TOKEN': csrfPayload.token || '',
-      'X-Requested-With': 'XMLHttpRequest',
-      Cookie: cookie,
+      Authorization: `Bearer ${token}`,
     },
   });
 
-  return proxyJsonResponse(response);
+  return new Response(await response.text(), {
+    status: response.status,
+    headers,
+  });
 };

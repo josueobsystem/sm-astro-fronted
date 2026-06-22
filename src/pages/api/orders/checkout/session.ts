@@ -4,6 +4,7 @@ import { getAuthStatus } from '@/lib/auth';
 import { getApiBaseUrl } from '@/lib/config';
 import { fetchBackend } from '@/lib/backend';
 import { proxyJsonResponse } from '@/lib/proxy';
+import { bearerHeadersFromRequest } from '@/lib/auth-session';
 
 export const POST: APIRoute = async ({ request }) => {
   const authStatus = await getAuthStatus(request, env);
@@ -33,7 +34,7 @@ export const POST: APIRoute = async ({ request }) => {
     headers: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      Cookie: request.headers.get('cookie') || '',
+      ...bearerHeadersFromRequest(request),
     },
     body: JSON.stringify({
       ...payload,

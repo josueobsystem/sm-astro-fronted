@@ -247,7 +247,7 @@ async function startPayment() {
     const data = envelope.data;
     const successPath = `/checkout/success?reservation_id=${encodeURIComponent(props.reservation.id)}&purchase_number=${encodeURIComponent(data.purchase_number)}&billing_type=${encodeURIComponent(billingType.value)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}`;
     const frontendSuccessUrl = buildFrontendUrl(successPath);
-    const actionUrl = new URL('/orders/checkout/confirm', props.apiBaseUrl);
+    const actionUrl = new URL('/api/orders/checkout/confirm', props.apiBaseUrl);
     actionUrl.searchParams.set('reservation_id', props.reservation.id);
     actionUrl.searchParams.set('payment_method', selectedPaymentMethod.value);
     actionUrl.searchParams.set('billing_type', billingType.value);

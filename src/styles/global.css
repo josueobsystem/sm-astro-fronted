@@ -1650,7 +1650,7 @@ select {
   }
 }
 
-/* Inertia parity layer */
+/* Legacy visual parity layer */
 body.no-chrome {
   padding-top: 0;
   background: #f9fafb;
