@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "sm-astro-frontend",
+  "name": "sm-astro-fronted",
   "main": "@astrojs/cloudflare/entrypoints/server",
   "compatibility_date": "2026-05-27",
   "compatibility_flags": ["nodejs_compat"],
