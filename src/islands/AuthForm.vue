@@ -52,19 +52,13 @@ const isRegister = computed(() => props.mode === 'register');
 const redirectQuery = computed(() => `redirect=${encodeURIComponent(props.redirectTo || '/')}`);
 const backendApiBaseUrl = computed(() => props.apiBaseUrl || import.meta.env.PUBLIC_API_BASE_URL || '');
 const googleUrl = computed(() => {
-  const backendUrl = backendApiBaseUrl.value.trim();
-
-  if (!backendUrl) {
-    return `/api/auth/google?${redirectQuery.value}`;
-  }
-
   try {
-    const url = new URL('/api/auth/google', backendUrl.endsWith('/') ? backendUrl : `${backendUrl}/`);
+    const url = new URL('/api/auth/google', backendApiBaseUrl.value);
     url.searchParams.set('redirect', props.redirectTo || '/');
 
     return url.toString();
   } catch {
-    return `/api/auth/google?${redirectQuery.value}`;
+    return '#';
   }
 });
 const loginHref = computed(() => `/login?${redirectQuery.value}`);
@@ -140,6 +134,11 @@ const authErrorMap: Record<string, string> = {
   'auth.failed': 'Correo o contraseña incorrectos. Verifica tus datos e intenta nuevamente.',
   'auth.password': 'La contraseña ingresada es incorrecta.',
   'auth.throttle': 'Demasiados intentos de inicio de sesión. Intenta nuevamente en unos segundos.',
+  backend_auth: 'No pudimos iniciar sesión con Google. Intenta nuevamente.',
+  google_denied: 'Google no completó el inicio de sesión. Intenta nuevamente.',
+  invalid_state: 'La sesión de Google expiró. Intenta nuevamente.',
+  not_configured: 'El inicio con Google todavía no está configurado.',
+  token_exchange: 'Google no pudo completar el inicio de sesión. Intenta nuevamente.',
 };
 
 function normalizeError(raw: unknown): string {
@@ -341,6 +340,11 @@ watch(country, (value) => {
 });
 
 onMounted(() => {
+  const authError = new URLSearchParams(window.location.search).get('auth_error');
+  if (authError) {
+    errorMessage.value = normalizeError(authError);
+  }
+
   if (isRegister.value) {
     void loadCities();
   }
