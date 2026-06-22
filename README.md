@@ -1,6 +1,6 @@
 # SM Astro Frontend
 
-Frontend SSR separado del backend Laravel/Inertia.
+Frontend SSR separado del backend Laravel API.
 
 ## Stack
 
@@ -20,7 +20,7 @@ npm run dev
 Variables principales:
 
 ```bash
-PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_API_BASE_URL=http://localhost:8001
 PUBLIC_SITE_URL=http://localhost:4321
 PUBLIC_NIUBIZ_CHECKOUT_JS_URL=https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js
 ```
@@ -41,6 +41,10 @@ El `wrangler.jsonc` usa el entrypoint recomendado para Astro 6:
 
 - `GET /api/public/home`
 - `GET /api/public/events/{slug}`
+- `GET /api/auth/google`
+- `POST /api/client-auth/login`
+- `POST /api/client-auth/register`
+- `GET /api/client-auth/me`
 - `POST /api/orders/reservations`
 - `GET /api/orders/reservations/{id}`
 - `POST /api/orders/checkout/session`

@@ -1,5 +1,6 @@
 import { getApiBaseUrl } from './config';
 import { fetchBackendWithTimeout } from './backend';
+import { readClientToken } from './auth-session';
 
 type RuntimeEnv = Parameters<typeof getApiBaseUrl>[0];
 
@@ -30,17 +31,17 @@ export type AuthUser = {
 };
 
 export async function getAuthStatus(request: Request, env?: RuntimeEnv): Promise<AuthStatus> {
-  const cookie = request.headers.get('cookie') || '';
+  const token = readClientToken(request);
 
-  if (!cookie) {
+  if (!token) {
     return { authenticated: false, user_id: null };
   }
 
   try {
-    const response = await fetchBackendWithTimeout(`${getApiBaseUrl(env)}/auth-status`, env, {
+    const response = await fetchBackendWithTimeout(`${getApiBaseUrl(env)}/api/client-auth/me`, env, {
       headers: {
         Accept: 'application/json',
-        Cookie: cookie,
+        Authorization: `Bearer ${token}`,
       },
     });
 
@@ -48,17 +49,21 @@ export async function getAuthStatus(request: Request, env?: RuntimeEnv): Promise
       return { authenticated: false, user_id: null };
     }
 
-    const payload = await response.json() as Partial<AuthStatus>;
+    const payload = await response.json() as {
+      data?: Partial<AuthStatus>;
+    } & Partial<AuthStatus>;
+    const data = payload.data || payload;
+    const user = data.user ?? null;
 
     return {
-      authenticated: Boolean(payload.authenticated),
-      user_id: payload.user_id ?? null,
-      csrf_token: payload.csrf_token ?? null,
-      user: payload.user ?? null,
-      actor_type: payload.actor_type ?? null,
-      permissions: Array.isArray(payload.permissions) ? payload.permissions : [],
-      roles: Array.isArray(payload.roles) ? payload.roles : [],
-      is_admin: Boolean(payload.is_admin),
+      authenticated: true,
+      user_id: data.user_id ?? user?.id ?? null,
+      csrf_token: null,
+      user,
+      actor_type: data.actor_type ?? null,
+      permissions: Array.isArray(data.permissions) ? data.permissions : [],
+      roles: Array.isArray(data.roles) ? data.roles : [],
+      is_admin: Boolean(data.is_admin),
     };
   } catch {
     return { authenticated: false, user_id: null };

@@ -730,10 +730,16 @@ select {
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: min(700px, calc(100vw * 700 / 1700));
+  height: min(500px, calc(100vw * 500 / 1700));
   border-radius: 0;
   background: linear-gradient(135deg, rgba(var(--color-primary-500-rgb), 0.08), rgba(var(--color-secondary-500-rgb), 0.06));
   box-shadow: 0 30px 80px rgba(17, 24, 39, 0.12);
+}
+
+@media (min-width: 1700px) {
+  .hero-swiper-shell {
+    height: clamp(500px, calc((100vw * 700 / 1700) - 200px), 700px);
+  }
 }
 
 .hero-swiper {
@@ -1650,7 +1656,7 @@ select {
   }
 }
 
-/* Inertia parity layer */
+/* Legacy visual parity layer */
 body.no-chrome {
   padding-top: 0;
   background: #f9fafb;

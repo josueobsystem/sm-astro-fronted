@@ -15,7 +15,7 @@ const redirectTo = sanitizeRedirect(Astro.url.searchParams.get('redirect'));
       <img src={visualUrl} alt="Sonia Morales visual" />
     </div>
     <div class="auth-panel">
-      <AuthForm client:load mode="login" apiBaseUrl={getApiBaseUrl(env)} redirectTo={redirectTo} />
+      <AuthForm client:load mode="login" redirectTo={redirectTo} apiBaseUrl={getApiBaseUrl(env)} />
     </div>
   </section>
 </BaseLayout>

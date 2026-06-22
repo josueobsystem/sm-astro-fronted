@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
 import { fetchBackend } from '@/lib/backend';
 import { proxyJsonResponse } from '@/lib/proxy';
+import { bearerHeadersFromRequest } from '@/lib/auth-session';
 
 export const POST: APIRoute = async ({ request }) => {
   const response = await fetchBackend(`${getApiBaseUrl(env)}/api/crm/service-requests`, env, {
@@ -10,9 +11,7 @@ export const POST: APIRoute = async ({ request }) => {
     headers: {
       Accept: 'application/json',
       'Content-Type': request.headers.get('content-type') || 'application/json',
-      'X-CSRF-TOKEN': request.headers.get('x-csrf-token') || '',
-      'X-Requested-With': 'XMLHttpRequest',
-      Cookie: request.headers.get('cookie') || '',
+      ...bearerHeadersFromRequest(request),
     },
     body: await request.text(),
   });

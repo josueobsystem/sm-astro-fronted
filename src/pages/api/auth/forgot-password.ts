@@ -1,21 +1,9 @@
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
-import { getApiBaseUrl } from '@/lib/config';
-import { fetchBackend } from '@/lib/backend';
-import { proxyJsonResponse } from '@/lib/proxy';
 
-export const POST: APIRoute = async ({ request }) => {
-  const response = await fetchBackend(`${getApiBaseUrl(env)}/forgot-password`, env, {
-    method: 'POST',
-    headers: {
-      Accept: 'application/json',
-      'Content-Type': request.headers.get('content-type') || 'application/json',
-      'X-CSRF-TOKEN': request.headers.get('x-csrf-token') || '',
-      'X-Requested-With': 'XMLHttpRequest',
-      Cookie: request.headers.get('cookie') || '',
-    },
-    body: await request.text(),
-  });
-
-  return proxyJsonResponse(response);
+export const POST: APIRoute = async () => {
+  return Response.json({
+    status: 'error',
+    message: 'La recuperación de contraseña debe configurarse como API con enlace hacia Astro.',
+    data: null,
+  }, { status: 501 });
 };

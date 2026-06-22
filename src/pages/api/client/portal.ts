@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
 import { fetchBackend } from '@/lib/backend';
 import { proxyJsonResponse } from '@/lib/proxy';
+import { bearerHeadersFromRequest } from '@/lib/auth-session';
 
 export const GET: APIRoute = async ({ request, url }) => {
   const upstream = new URL(`${getApiBaseUrl(env)}/client-portal`);
@@ -15,7 +16,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const response = await fetchBackend(upstream, env, {
     headers: {
       Accept: 'application/json',
-      Cookie: request.headers.get('cookie') || '',
+      ...bearerHeadersFromRequest(request),
     },
   });
 

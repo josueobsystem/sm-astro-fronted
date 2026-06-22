@@ -3,13 +3,14 @@ import { env } from 'cloudflare:workers';
 import { getApiBaseUrl } from '@/lib/config';
 import { fetchBackend } from '@/lib/backend';
 import { copySetCookie } from '@/lib/proxy';
+import { bearerHeadersFromRequest } from '@/lib/auth-session';
 
 export const GET: APIRoute = async ({ params, request }) => {
   const ticketId = encodeURIComponent(params.ticketId || '');
   const response = await fetchBackend(`${getApiBaseUrl(env)}/api/orders/tickets/${ticketId}/pdf`, env, {
     headers: {
       Accept: request.headers.get('accept') || 'application/pdf',
-      Cookie: request.headers.get('cookie') || '',
+      ...bearerHeadersFromRequest(request),
     },
   });
 
