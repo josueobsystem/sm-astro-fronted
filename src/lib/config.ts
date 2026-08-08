@@ -23,6 +23,23 @@ export function getApiBaseUrl(env?: EnvLike): string {
   return normalizeUrl(String(runtimeUrl || buildUrl || 'http://localhost:8001'));
 }
 
+export function getBackendApiUrl(path: string, env?: EnvLike): URL {
+  const baseUrl = new URL(`${getApiBaseUrl(env)}/`);
+  const endpointUrl = new URL(path.startsWith('/') ? path : `/${path}`, 'http://internal.local');
+  const basePath = baseUrl.pathname.replace(/\/+$/, '');
+  let endpointPath = endpointUrl.pathname;
+
+  if (basePath.endsWith('/api') && endpointPath.startsWith('/api/')) {
+    endpointPath = endpointPath.slice('/api'.length);
+  }
+
+  baseUrl.pathname = `${basePath}${endpointPath}`.replace(/\/{2,}/g, '/') || '/';
+  baseUrl.search = endpointUrl.search;
+  baseUrl.hash = endpointUrl.hash;
+
+  return baseUrl;
+}
+
 export function getPublicSiteUrl(env?: EnvLike): string {
   const runtimeUrl = env?.PUBLIC_SITE_URL;
   const buildUrl = import.meta.env.PUBLIC_SITE_URL;
