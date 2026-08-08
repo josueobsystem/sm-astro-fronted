@@ -6,7 +6,7 @@ import { proxyJsonResponse } from '@/lib/proxy';
 import { bearerHeadersFromRequest } from '@/lib/auth-session';
 
 export const GET: APIRoute = async ({ request, url }) => {
-  const upstream = new URL(`${getApiBaseUrl(env)}/client-portal`);
+  const upstream = new URL(`${getApiBaseUrl(env)}/api/client/portal`);
   const sessionId = url.searchParams.get('session_id');
 
   if (sessionId) {
