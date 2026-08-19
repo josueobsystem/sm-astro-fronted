@@ -8,6 +8,7 @@ import { env } from 'cloudflare:workers';
 
 const search = Object.fromEntries(Astro.url.searchParams);
 const result = await apiGet<CheckoutSuccessPayload>('/api/orders/checkout/success', env, search);
+const paymentMessage = Astro.url.searchParams.get('payment_message');
 const paymentStatus = Astro.url.searchParams.get('payment_status');
 const paymentWasDenied = paymentStatus !== null
   && paymentStatus !== ''
@@ -20,7 +21,7 @@ const paymentTransaction: CheckoutTransaction | null = paymentStatus ? {
   currency: Astro.url.searchParams.get('payment_currency'),
   card: Astro.url.searchParams.get('payment_card'),
   brand: Astro.url.searchParams.get('payment_brand'),
-  action_description: null,
+  action_description: paymentMessage,
 } : null;
 const resultPayload = result.ok
   ? result.data
@@ -38,7 +39,7 @@ const payload: CheckoutSuccessPayload = paymentWasDenied
   ? {
       ...resultPayload,
       error: {
-        message: 'No pudimos aprobar tu pago.',
+        message: paymentMessage || resultPayload.error?.message || 'No pudimos aprobar tu pago.',
         code: paymentStatus || resultPayload.error?.code || 'PAYMENT_DENIED',
         transaction: paymentTransaction,
       },

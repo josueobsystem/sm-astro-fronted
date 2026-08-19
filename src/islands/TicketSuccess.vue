@@ -14,6 +14,7 @@ const tickets = computed(() => Array.isArray(props.payload.tickets) ? props.payl
 const orderNumber = computed(() => props.payload.order?.purchase_number || props.payload.purchaseNumber || props.payload.order?.id?.slice(0, 8) || '-');
 const transaction = computed<CheckoutTransaction | null>(() => props.payload.transaction || props.payload.error?.transaction || null);
 const transactionCustomerName = computed(() => transaction.value?.customer_name || props.payload.order?.customer_name || null);
+const deniedActionDescription = computed(() => transaction.value?.action_description || props.payload.error?.message || 'No pudimos procesar tu pago.');
 const isYapePayment = computed(() => {
   const selectedMethod = `${transaction.value?.payment_method || ''}`.trim().toLowerCase();
   if (selectedMethod === 'yape') {
@@ -90,7 +91,7 @@ function transactionAmount(value: number | string | null | undefined, currency: 
           <div>
             <p class="checkout-result-ticket__label">Resultado de la transacción</p>
             <h2>No pudimos aprobar tu pago.</h2>
-            <p>No se realizó ningún cargo. Puedes intentar nuevamente con otro medio de pago.</p>
+            <p>{{ deniedActionDescription }}</p>
           </div>
         </div>
 

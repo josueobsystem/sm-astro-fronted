@@ -87,10 +87,10 @@ function resultUrl(request: Request, payment: PaymentResult | null): URL {
     }
 
     if (payment?.actionDescription) {
-      // La descripción de Niubiz puede contener información técnica o sensible
-      // para el cliente. Solo se conserva el estado necesario para mostrar un
-      // resultado genérico de pago, sin exponer el motivo de la pasarela.
+      // Se conserva la descripción de Niubiz para mostrarla una sola vez en la
+      // parte superior del resultado, sin recrear el bloque de motivo inferior.
       url.searchParams.set('payment_status', payment.status || 'denied');
+      url.searchParams.set('payment_message', payment.actionDescription);
       url.searchParams.set('payment_transaction_date', payment.transactionDate || '');
       url.searchParams.set('payment_amount', payment.amount || '');
       url.searchParams.set('payment_currency', payment.currency || '');
