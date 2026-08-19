@@ -335,8 +335,11 @@ async function startPayment() {
     // Niubiz administra su propio modal. Al cerrarlo no devuelve un callback,
     // por lo que el checkout debe quedar disponible para que el usuario reintente.
     loading.value = false;
-  } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : 'No pudimos iniciar el pago.';
+  } catch {
+    // Los errores del inicio de sesión de pago no se muestran tal como los
+    // devuelve la pasarela. Así se evita exponer motivos técnicos o de la
+    // tarjeta en el checkout.
+    errorMessage.value = 'No pudimos iniciar el pago. Inténtalo nuevamente.';
     loading.value = false;
   }
 }
