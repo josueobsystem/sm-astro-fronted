@@ -122,6 +122,21 @@ export type CheckoutReservation = {
   expires_at: string;
 };
 
+export type CheckoutTransaction = {
+  status?: 'approved' | 'denied' | string | null;
+  purchase_number?: string | null;
+  customer_name?: string | null;
+  transaction_date?: string | null;
+  amount?: number | string | null;
+  currency?: string | null;
+  product_description?: string | null;
+  card?: string | null;
+  brand?: string | null;
+  payment_method?: 'card' | 'yape' | string | null;
+  yape_id?: string | null;
+  action_description?: string | null;
+};
+
 export type CheckoutSuccessPayload = {
   order: {
     id: string;
@@ -133,6 +148,7 @@ export type CheckoutSuccessPayload = {
   tickets: CheckoutTicket[];
   purchaseNumber?: string | null;
   flowId?: string | null;
+  transaction?: CheckoutTransaction | null;
   error?: {
     message: string;
     code: string;
@@ -140,5 +156,6 @@ export type CheckoutSuccessPayload = {
     reservation_id?: string | null;
     purchase_number?: string | null;
     retry_url?: string | null;
+    transaction?: CheckoutTransaction | null;
   } | null;
 };

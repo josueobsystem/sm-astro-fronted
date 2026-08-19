@@ -87,13 +87,22 @@ const user = computed(() => portal.value.auth?.user || props.initialUser);
 const tickets = computed(() => portal.value.tickets ?? []);
 const reservations = computed(() => portal.value.reservations ?? []);
 const serviceRequests = computed(() => portal.value.serviceRequests ?? []);
-const avatarUrl = computed(() => {
+const profilePhotoUrl = computed(() => {
   const photoUrl = user.value.profile_photo_url || '';
-  if (photoUrl && !photoUrl.includes('ui-avatars.com')) {
-    return photoUrl;
-  }
+  return photoUrl && !photoUrl.includes('ui-avatars.com') ? photoUrl : '';
+});
 
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(user.value.name || 'Cliente')}&size=256&background=ec4899&color=ffffff&bold=true`;
+const userInitials = computed(() => {
+  const words = (user.value.name || 'Cliente')
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  const initials = words.length > 1
+    ? `${words[0].charAt(0)}${words.at(-1)?.charAt(0) || ''}`
+    : words[0]?.charAt(0) || 'C';
+
+  return initials.toUpperCase();
 });
 
 const tabs = computed(() => [
@@ -258,13 +267,22 @@ onMounted(() => {
 <template>
   <section class="client-portal">
     <div class="client-profile-hero">
-      <div class="client-profile-gradient"></div>
       <div class="client-profile-content">
-        <img class="client-profile-avatar" :src="avatarUrl" :alt="user.name" />
-        <div>
+        <img
+          v-if="profilePhotoUrl"
+          class="client-profile-avatar"
+          :src="profilePhotoUrl"
+          :alt="`Foto de ${user.name}`"
+        />
+        <div v-else class="client-profile-avatar client-profile-monogram" aria-hidden="true">
+          {{ userInitials }}
+        </div>
+        <div class="client-profile-identity">
+          <span class="client-profile-eyebrow">Cuenta de cliente</span>
           <h1>{{ user.name }}</h1>
           <p>{{ user.email }}</p>
         </div>
+        <span class="client-profile-access">Portal de entradas</span>
       </div>
     </div>
 

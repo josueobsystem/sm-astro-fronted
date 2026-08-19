@@ -3,14 +3,81 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import HomeHero from '@/components/HomeHero.astro';
 import HomeEvents from '@/components/HomeEvents.astro';
 import { apiGet } from '@/lib/api';
+import { getIndexableSiteUrl } from '@/lib/config';
 import type { HomePayload } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
 const query = Object.fromEntries(Astro.url.searchParams);
 const homeResult = await apiGet<HomePayload>('/api/public/home', env, query);
 const home = homeResult.ok ? homeResult.data : null;
+const indexableSiteUrl = getIndexableSiteUrl(env);
 
 const firstSlide = home?.slides?.[0];
+const seoTitle = 'Sonia Morales | Conciertos oficiales y compra de entradas en Peru';
+const seoDescription =
+  firstSlide?.seo_description ||
+  home?.seo?.description ||
+  'Compra entradas oficiales para conciertos, shows en vivo y eventos de Sonia Morales en Peru.';
+const seoKeywords = [
+  'Sonia Morales',
+  'conciertos Sonia Morales',
+  'entradas Sonia Morales',
+  'tickets Sonia Morales',
+  'compra de entradas',
+  'eventos oficiales Sonia Morales',
+  'shows en vivo Peru',
+  'folklore peruano',
+];
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: 'Sonia Morales',
+    alternateName: 'La Princesa del Folclore Peruano',
+    description: seoDescription,
+    image: firstSlide?.image || null,
+    url: `${indexableSiteUrl}/`,
+    sameAs: [
+      'https://www.instagram.com/soniamoralesperu',
+      'https://www.youtube.com/SoniaMorales',
+      'https://www.facebook.com/SoniaMorales',
+      'https://www.tiktok.com/@soniamorales',
+    ],
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    name: 'Sonia Morales',
+    alternateName: 'Sonia Morales Entradas Oficiales',
+    url: `${indexableSiteUrl}/`,
+    description: seoDescription,
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: `${indexableSiteUrl}/?q={search_term_string}`,
+      'query-input': 'required name=search_term_string',
+    },
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: seoTitle,
+    url: `${indexableSiteUrl}/`,
+    description: seoDescription,
+    about: {
+      '@type': 'Person',
+      name: 'Sonia Morales',
+    },
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: (home?.events || []).slice(0, 10).map((event, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        url: `${indexableSiteUrl}${event.url}`,
+        name: event.title,
+      })),
+    },
+  },
+];
 const preloadImages = [
   firstSlide?.image ? { href: firstSlide.image, media: '(min-width: 768px)' } : null,
   (firstSlide?.image_sm || firstSlide?.image)
@@ -20,18 +87,22 @@ const preloadImages = [
 ---
 
 <BaseLayout
-  title="Sonia Morales - Entradas oficiales"
-  description="Compra entradas oficiales para eventos de Sonia Morales."
+  title={seoTitle}
+  description={seoDescription}
+  image={firstSlide?.image || null}
+  keywords={seoKeywords}
+  structuredData={structuredData}
   preloadImages={preloadImages}
 >
+  <h1 class="sr-only">Sonia Morales: conciertos oficiales, shows en vivo y compra de entradas</h1>
   <HomeHero query={query} home={home} homeErrorMessage={homeResult.ok ? '' : homeResult.message} />
 
   <section class="section" id="solicitud-evento">
     <div class="shell notice-panel" style="margin-top:0">
       <p class="eyebrow">Eventos privados</p>
-      <h1 class="display-title" style="font-size: clamp(2rem, 5vw, 3.6rem); line-height:1.02; max-width: 760px;">
+      <h2 class="display-title" style="font-size: clamp(2rem, 5vw, 3.6rem); line-height:1.02; max-width: 760px;">
         Solicita tu evento con Sonia Morales
-      </h1>
+      </h2>
       <p class="lead">
         Completa el formulario para bodas, fiestas privadas, aniversarios y eventos corporativos.
       </p>

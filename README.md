@@ -20,7 +20,7 @@ npm run dev
 Variables principales:
 
 ```bash
-PUBLIC_API_BASE_URL=http://localhost:8000
+PUBLIC_API_BASE_URL=http://localhost:8001
 PUBLIC_SITE_URL=http://localhost:4321
 PUBLIC_NIUBIZ_CHECKOUT_JS_URL=https://static-content-qas.vnforapps.com/env/sandbox/js/checkout.js
 ```

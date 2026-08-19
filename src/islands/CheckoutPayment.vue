@@ -5,7 +5,6 @@ import { truncateWords } from '@/lib/text';
 import type { CheckoutReservation, PublicEvent, ReservationItem } from '@/types/api';
 
 const props = defineProps<{
-  apiBaseUrl: string;
   siteUrl: string;
   reservation: CheckoutReservation;
   event: PublicEvent | null;
@@ -19,7 +18,6 @@ const props = defineProps<{
 }>();
 
 const NIUBIZ_MERCHANT_LOGO_PATH = '/niubiz-merchant-logo.png';
-const CHECKOUT_BRAND_LOGO_PATH = '/checkout-brand-logo.png';
 const DEFAULT_PROCESSING_FEE_LABEL = 'Cargo por procesamiento de pago';
 const DEFAULT_PROCESSING_FEE_RATE_LABEL = '3.45% + IGV';
 const DEFAULT_PROCESSING_FEE_TOTAL_RATE = 0.0345 * 1.18;
@@ -31,8 +29,12 @@ const billingType = ref<'boleta' | 'factura'>('boleta');
 const ruc = ref('');
 const razonSocial = ref('');
 const direccion = ref('');
-const selectedPaymentMethod = ref('card');
-const consent = ref(false);
+const selectedPaymentMethod = ref('');
+const termsAccepted = ref(false);
+const promotionsAccepted = ref(false);
+const checkoutStep = ref<'payment' | 'summary'>('payment');
+const contactDetailsOpen = ref(false);
+const paymentMethodOpen = ref(false);
 const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const secondsLeft = ref(secondsUntilExpiration());
@@ -71,7 +73,9 @@ const ticketLabels = computed(() => props.reservation.items.map((item) => {
   const lineTotal = roundMoney(lineSubtotal + lineFee);
 
   return {
+    quantity,
     label: `${quantity} ${quantity === 1 ? 'entrada' : 'entradas'} - ${item.name || 'Entrada'}`,
+    subtotal: lineSubtotal,
     price: lineTotal,
     currency: displayCurrency(item.currency),
     processingFeeAmount: lineFee,
@@ -109,12 +113,11 @@ const timerDisplay = computed(() => {
 });
 const timerUrgent = computed(() => secondsLeft.value <= 60);
 const paymentDisabled = computed(() => {
-  if (loading.value || !name.value || !email.value) return true;
-  if (billingType.value === 'factura') {
-    return !/^\d{11}$/.test(ruc.value) || !razonSocial.value || !direccion.value;
-  }
+  if (loading.value) return true;
 
-  return false;
+  return checkoutStep.value === 'payment'
+    ? !selectedPaymentMethod.value
+    : !termsAccepted.value;
 });
 
 function roundMoney(value: number): number {
@@ -160,6 +163,22 @@ function closeCheckout() {
   window.location.href = '/';
 }
 
+function goBack() {
+  errorMessage.value = null;
+
+  if (checkoutStep.value === 'summary') {
+    checkoutStep.value = 'payment';
+    return;
+  }
+
+  if (window.history.length > 1) {
+    window.history.back();
+    return;
+  }
+
+  closeCheckout();
+}
+
 function fillContactFromSession() {
   const initialName = String(props.initialContact?.name || '').trim();
   const initialEmail = String(props.initialContact?.email || '').trim();
@@ -200,8 +219,45 @@ function buildFrontendUrl(path: string): string {
   return new URL(path, props.siteUrl).toString();
 }
 
+function continueToSummary() {
+  errorMessage.value = null;
+
+  if (!selectedPaymentMethod.value) {
+    errorMessage.value = 'Selecciona un método de pago para continuar.';
+    return;
+  }
+
+  if (!name.value || !email.value) {
+    contactDetailsOpen.value = true;
+    errorMessage.value = 'Completa tus datos de contacto para continuar.';
+    return;
+  }
+
+  if (billingType.value === 'factura' && (!/^\d{11}$/.test(ruc.value) || !razonSocial.value || !direccion.value)) {
+    errorMessage.value = 'Completa los datos de factura para continuar.';
+    return;
+  }
+
+  checkoutStep.value = 'summary';
+}
+
+function togglePaymentMethod() {
+  selectedPaymentMethod.value = 'card';
+  paymentMethodOpen.value = !paymentMethodOpen.value;
+}
+
 async function startPayment() {
   errorMessage.value = null;
+
+  if (!selectedPaymentMethod.value) {
+    errorMessage.value = 'Selecciona un método de pago para continuar.';
+    return;
+  }
+
+  if (!termsAccepted.value) {
+    errorMessage.value = 'Acepta los términos y condiciones para continuar.';
+    return;
+  }
 
   if (!name.value || !email.value) {
     errorMessage.value = 'Ingresa nombre y correo para continuar.';
@@ -247,8 +303,15 @@ async function startPayment() {
     const data = envelope.data;
     const successPath = `/checkout/success?reservation_id=${encodeURIComponent(props.reservation.id)}&purchase_number=${encodeURIComponent(data.purchase_number)}&billing_type=${encodeURIComponent(billingType.value)}&payment_method=${encodeURIComponent(selectedPaymentMethod.value)}`;
     const frontendSuccessUrl = buildFrontendUrl(successPath);
-    const actionUrl = new URL('/api/orders/checkout/confirm', props.apiBaseUrl);
+    // Niubiz debe publicar el resultado en nuestro dominio. El endpoint del
+    // frontend reenvía la autorización al backend y vuelve a la pantalla de
+    // resultado, sin depender de los redirects del API.
+    const actionUrl = new URL('/api/orders/checkout/confirm', props.siteUrl);
     actionUrl.searchParams.set('reservation_id', props.reservation.id);
+    // Niubiz solo envía el token en el POST de retorno. El número de compra
+    // debe viajar en la URL para que el backend encuentre y autorice el pago.
+    actionUrl.searchParams.set('purchase_number', data.purchase_number);
+    actionUrl.searchParams.set('purchaseNumber', data.purchase_number);
     actionUrl.searchParams.set('payment_method', selectedPaymentMethod.value);
     actionUrl.searchParams.set('billing_type', billingType.value);
     actionUrl.searchParams.set('frontend_success_url', frontendSuccessUrl);
@@ -269,6 +332,9 @@ async function startPayment() {
       action: actionUrl.toString(),
     });
     window.VisanetCheckout.open();
+    // Niubiz administra su propio modal. Al cerrarlo no devuelve un callback,
+    // por lo que el checkout debe quedar disponible para que el usuario reintente.
+    loading.value = false;
   } catch (error) {
     errorMessage.value = error instanceof Error ? error.message : 'No pudimos iniciar el pago.';
     loading.value = false;
@@ -277,6 +343,7 @@ async function startPayment() {
 
 onMounted(() => {
   fillContactFromSession();
+  contactDetailsOpen.value = !name.value || !email.value;
 
   void ensureAuthenticatedSession().then((authenticated) => {
     if (authenticated) {
@@ -306,6 +373,12 @@ onUnmounted(() => {
 
 <template>
   <div class="checkout-page">
+    <div class="checkout-brand-bar">
+      <a href="/" aria-label="Volver al inicio de Sonia Morales">
+        <img src="https://ob-sm-systema-tickets.us-southeast-1.linodeobjects.com/web%2FLOGO%203.png" alt="Sonia Morales" />
+      </a>
+    </div>
+
     <div class="checkout-progress-wrap">
       <div class="checkout-progress-shell">
         <div class="checkout-progress-bar">
@@ -316,11 +389,34 @@ onUnmounted(() => {
 
     <header class="checkout-header">
       <div class="checkout-header-inner">
-        <div class="checkout-step">
-          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-          </svg>
-          <span>Pago</span>
+        <div class="checkout-header-progress">
+          <button class="checkout-back" type="button" :aria-label="checkoutStep === 'summary' ? 'Volver a datos de compra' : 'Volver a la selección de entradas'" @click="goBack">
+            <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 18l-6-6 6-6" />
+            </svg>
+          </button>
+
+          <nav class="checkout-steps" aria-label="Progreso de compra">
+            <ol>
+              <li class="is-complete">
+                <span class="checkout-step-marker">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="m5 12 4 4L19 6" /></svg>
+                </span>
+                <span>Entradas</span>
+              </li>
+              <li :class="{ 'is-current': checkoutStep === 'payment', 'is-complete': checkoutStep === 'summary' }">
+                <span class="checkout-step-marker">
+                  <svg v-if="checkoutStep === 'summary'" width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="m5 12 4 4L19 6" /></svg>
+                  <span v-else>2</span>
+                </span>
+                <span>Datos de compra</span>
+              </li>
+              <li :class="{ 'is-current': checkoutStep === 'summary' }">
+                <span class="checkout-step-marker">3</span>
+                <span>Confirmación</span>
+              </li>
+            </ol>
+          </nav>
         </div>
 
         <div class="checkout-timer" :class="{ urgent: timerUrgent }">
@@ -341,124 +437,154 @@ onUnmounted(() => {
     <main class="checkout-body">
       <div class="checkout-grid">
         <section class="checkout-main">
-          <div class="checkout-contact-card">
-            <h3>Datos de Contacto</h3>
-            <label>
-              <span>Nombre Completo</span>
-              <input v-model="name" class="checkout-input" placeholder="Tu nombre" />
-            </label>
-            <label>
-              <span>Correo Electrónico</span>
-              <input v-model="email" type="email" class="checkout-input" placeholder="tucorreo@ejemplo.com" />
-              <small class="meta-line">Aquí enviaremos tus entradas.</small>
-            </label>
-            <label>
-              <span>Teléfono (Opcional)</span>
-              <input v-model="phone" class="checkout-input" placeholder="999 999 999" />
-            </label>
-          </div>
-
-          <div class="billing-wrap">
-            <div class="billing-badge">Facturación</div>
-
-            <label class="billing-select-field">
-              <span class="field-label">Tipo de comprobante</span>
-              <div class="billing-select-wrap">
-                <select v-model="billingType" class="billing-select" aria-label="Selecciona tipo de comprobante">
-                  <option value="boleta">Boleta</option>
-                  <option value="factura">Factura</option>
-                </select>
-                <svg class="billing-select-chevron" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-                  <path fill="currentColor" d="m7 10 5 5 5-5z" />
-                </svg>
-              </div>
-            </label>
-            <p class="billing-helper">Por defecto emitiremos boleta.</p>
-
-            <div v-if="billingType === 'factura'" class="invoice-form">
-              <label class="field-group">
-                <span class="field-label">RUC *</span>
-                <input v-model="ruc" class="checkout-input" maxlength="11" placeholder="Ej: 20123456789" />
+          <template v-if="checkoutStep === 'payment'">
+          <div class="checkout-contact-section">
+            <button class="checkout-contact-toggle" type="button" :aria-expanded="contactDetailsOpen" @click="contactDetailsOpen = !contactDetailsOpen">
+              <span>
+                <span class="checkout-section-label">Datos de contacto</span>
+                <small v-if="name && email">{{ name }} · {{ email }}</small>
+                <small v-else>Completa la información para recibir tus entradas.</small>
+              </span>
+              <svg :class="{ 'is-open': contactDetailsOpen }" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="currentColor" d="m7 10 5 5 5-5z" />
+              </svg>
+            </button>
+            <div v-show="contactDetailsOpen" class="checkout-contact-card checkout-contact-fields">
+              <label>
+                <span>Nombre Completo</span>
+                <input v-model="name" class="checkout-input" placeholder="Tu nombre" />
               </label>
-              <label class="field-group">
-                <span class="field-label">Razón Social *</span>
-                <input v-model="razonSocial" class="checkout-input" placeholder="Nombre de la empresa" />
+              <label>
+                <span>Correo Electrónico</span>
+                <input v-model="email" type="email" class="checkout-input" placeholder="tucorreo@ejemplo.com" />
+                <small class="meta-line">Aquí enviaremos tus entradas.</small>
               </label>
-              <label class="field-group">
-                <span class="field-label">Dirección fiscal *</span>
-                <input v-model="direccion" class="checkout-input" placeholder="Av. Ejemplo 123, Lima" />
+              <label>
+                <span>Teléfono (Opcional)</span>
+                <input v-model="phone" class="checkout-input" placeholder="999 999 999" />
               </label>
             </div>
+          </div>
 
-            <div class="billing-note">
-              <p>
-                Las entradas son vendidas por nuestra empresa, por lo que recibirás un Comprobante de Pago
-                (boleta o factura) por el monto total de tu compra.
-              </p>
-              <p>Para descargar tu {{ billingType === 'boleta' ? 'Boleta' : 'Factura' }} ingresa a <strong>"MIS ENTRADAS"</strong></p>
+          <div class="billing-section">
+            <p class="checkout-section-label">Facturación</p>
+
+            <div class="billing-wrap">
+              <label class="billing-select-field">
+                <span class="field-label">Tipo de comprobante</span>
+                <div class="billing-select-wrap">
+                  <select v-model="billingType" class="billing-select" aria-label="Selecciona tipo de comprobante">
+                    <option value="boleta">Boleta</option>
+                    <option value="factura">Factura</option>
+                  </select>
+                  <svg class="billing-select-chevron" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="currentColor" d="m7 10 5 5 5-5z" />
+                  </svg>
+                </div>
+              </label>
+              <p class="billing-helper">Por defecto emitiremos boleta.</p>
+
+              <div v-if="billingType === 'factura'" class="invoice-form">
+                <label class="field-group">
+                  <span class="field-label">RUC *</span>
+                  <input v-model="ruc" class="checkout-input" maxlength="11" placeholder="Ej: 20123456789" />
+                </label>
+                <label class="field-group">
+                  <span class="field-label">Razón Social *</span>
+                  <input v-model="razonSocial" class="checkout-input" placeholder="Nombre de la empresa" />
+                </label>
+                <label class="field-group">
+                  <span class="field-label">Dirección fiscal *</span>
+                  <input v-model="direccion" class="checkout-input" placeholder="Av. Ejemplo 123, Lima" />
+                </label>
+              </div>
+
+              <div class="billing-note">
+                <p>
+                  Las entradas son vendidas por nuestra empresa, por lo que recibirás un Comprobante de Pago
+                  (boleta o factura) por el monto total de tu compra.
+                </p>
+                <p>Para descargar tu {{ billingType === 'boleta' ? 'Boleta' : 'Factura' }} ingresa a <strong>"MIS ENTRADAS"</strong></p>
+              </div>
             </div>
           </div>
 
           <div class="payment-selector">
-            <h2>Selecciona Cómo Pagar</h2>
-            <p class="payment-subtitle">Elige el método de pago para tu compra.</p>
+            <p class="checkout-section-label">Selecciona tu medio de pago</p>
 
-            <label class="consent-label">
-              <input v-model="consent" type="checkbox" />
-              <span>
-                Doy mi <a href="#" class="consent-link">consentimiento para usos adicionales</a>
-                y disfrutar de los beneficios, promociones y descuentos creados para mí.
-              </span>
-            </label>
+            <div class="niubiz-payment-method" :class="{ 'is-open': paymentMethodOpen }">
+              <button class="niubiz-payment-method__trigger" type="button" :aria-expanded="paymentMethodOpen" @click="togglePaymentMethod">
+                <span class="niubiz-payment-method__brands">
+                  <img src="/niubiz-payment-methods.png" alt="Visa, Mastercard, American Express, Diners Club y Yape" />
+                </span>
+                <span class="niubiz-yape-wordmark">NIUBIZ-YAPE</span>
+                <span class="niubiz-payment-method__selected" aria-hidden="true">
+                  <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="m5 12 4 4L19 6" />
+                  </svg>
+                </span>
+              </button>
 
-            <button
-              class="method-item selected"
-              type="button"
-              @click="selectedPaymentMethod = 'card'"
-            >
-              <span class="method-left">
-                <span class="method-brand-logo-wrap">
-                  <img :src="CHECKOUT_BRAND_LOGO_PATH" alt="Logo Sonia Morales" class="method-brand-logo" />
+              <div v-if="paymentMethodOpen" class="niubiz-payment-method__content">
+                <span class="niubiz-payment-method__title">Tarjeta de crédito / débito / Yape</span>
+                <span class="niubiz-payment-method__description">
+                  Paga de forma segura con tarjetas de crédito, débito o yape. Revisa el detalle de la compra y el monto a pagar antes de continuar, una vez procesado el pago no existen cambios ni devoluciones.
                 </span>
-                <span class="method-label">Pago online (Tarjetas, Yape y más)</span>
-              </span>
-              <span class="method-logos">
-                <span class="logo-svg" title="Yape">
-                  <svg viewBox="0 0 56 26" aria-hidden="true">
-                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#7428d9" />
-                    <text x="28" y="17" fill="#ffffff" font-size="10" font-weight="700" text-anchor="middle">yape</text>
-                  </svg>
-                </span>
-                <span class="logo-svg" title="Visa">
-                  <svg viewBox="0 0 56 26" aria-hidden="true">
-                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
-                    <text x="28" y="17" fill="#1a1f71" font-size="10" font-weight="800" text-anchor="middle">VISA</text>
-                  </svg>
-                </span>
-                <span class="logo-svg" title="Mastercard">
-                  <svg viewBox="0 0 56 26" aria-hidden="true">
-                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
-                    <circle cx="24" cy="13" r="7" fill="#eb001b" />
-                    <circle cx="32" cy="13" r="7" fill="#f79e1b" fill-opacity="0.9" />
-                  </svg>
-                </span>
-                <span class="logo-svg" title="American Express">
-                  <svg viewBox="0 0 56 26" aria-hidden="true">
-                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#0f7de8" />
-                    <text x="28" y="14.5" fill="#ffffff" font-size="6.5" font-weight="800" text-anchor="middle">AMERICAN</text>
-                    <text x="28" y="20.5" fill="#ffffff" font-size="6.5" font-weight="800" text-anchor="middle">EXPRESS</text>
-                  </svg>
-                </span>
-                <span class="logo-svg" title="Diners Club">
-                  <svg viewBox="0 0 56 26" aria-hidden="true">
-                    <rect x="1" y="1" width="54" height="24" rx="7" fill="#ffffff" stroke="#d1d5db" />
-                    <circle cx="28" cy="13" r="7.2" fill="#0069aa" />
-                    <rect x="26" y="8.4" width="4" height="9.2" rx="2" fill="#ffffff" />
-                  </svg>
-                </span>
-              </span>
-            </button>
+                <img class="niubiz-payment-method__operator" src="/niubiz-operated-by.png" alt="Operado por Niubiz" />
+              </div>
+            </div>
           </div>
+          </template>
+
+          <section v-if="checkoutStep === 'summary'" class="checkout-summary-section" aria-labelledby="checkout-purchase-summary-title">
+            <h2 id="checkout-purchase-summary-title" class="checkout-section-label">Resumen de compra</h2>
+
+            <div class="checkout-purchase-summary">
+              <div class="checkout-purchase-summary__meta">
+                <span class="checkout-purchase-summary__items">{{ totalTickets }} {{ totalTickets === 1 ? 'entrada' : 'entradas' }}</span>
+              </div>
+              <div class="checkout-summary-table-wrap">
+                <table class="checkout-summary-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Cant.</th>
+                      <th scope="col">Entrada</th>
+                      <th scope="col">Precio</th>
+                      <th scope="col">Cargo</th>
+                      <th scope="col">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="(ticket, index) in ticketLabels" :key="`${ticket.label}-${index}`">
+                      <td>{{ ticket.quantity }}</td>
+                      <td>{{ ticket.label }}</td>
+                      <td>{{ ticket.currency }}{{ formatCompactMoney(ticket.subtotal) }}</td>
+                      <td>{{ ticket.currency }}{{ formatCompactMoney(ticket.processingFeeAmount) }}</td>
+                      <td>{{ ticket.currency }}{{ formatCompactMoney(ticket.price) }}</td>
+                    </tr>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <th colspan="4" scope="row">Total a pagar</th>
+                      <td>S/{{ formatCompactMoney(total) }}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <fieldset class="checkout-required-consents">
+              <legend>Necesario para continuar</legend>
+              <label>
+                <input v-model="termsAccepted" type="checkbox" />
+                <span>Declaro que he leído y acepto los <a href="/terms">Términos y Condiciones</a> y la <a href="/policy">Política de Privacidad</a>.</span>
+              </label>
+              <label>
+                <input v-model="promotionsAccepted" type="checkbox" />
+                <span>Autorizo recibir información sobre eventos, promociones y encuestas. <em>Opcional</em></span>
+              </label>
+            </fieldset>
+          </section>
 
           <p v-if="errorMessage" class="checkout-error" style="margin-top:1rem">{{ errorMessage }}</p>
         </section>
@@ -480,37 +606,6 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <div v-for="(ticket, index) in ticketLabels" :key="index" class="sidebar-ticket-row">
-              <div class="sidebar-ticket-icon">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-                </svg>
-              </div>
-              <div>
-                <p class="sidebar-ticket-label">{{ ticket.label }}</p>
-                <p class="sidebar-ticket-price">{{ ticket.currency }}{{ formatCompactMoney(ticket.price) }} (incluye IGV)</p>
-                <p v-if="ticket.processingFeeAmount > 0" class="sidebar-ticket-processing">
-                  + {{ ticket.processingFeeLabel }} ({{ ticket.processingFeeRateLabel }}): {{ ticket.currency }}{{ formatCompactMoney(ticket.processingFeeAmount) }}
-                </p>
-              </div>
-            </div>
-
-            <div class="summary">
-              <h4 class="summary-title">Resumen</h4>
-              <div class="summary-row">
-                <span>Monto del concierto (incluye IGV)</span>
-                <span>S/{{ formatCompactMoney(concertAmount) }}</span>
-              </div>
-              <div class="summary-row">
-                <span>{{ DEFAULT_PROCESSING_FEE_LABEL }} ({{ DEFAULT_PROCESSING_FEE_RATE_LABEL }})</span>
-                <span>S/{{ formatCompactMoney(processingFeeAmount) }}</span>
-              </div>
-              <div class="summary-total">
-                <span class="total-label">Total a pagar (incluye IGV)</span>
-                <span class="total-amount">S/{{ formatCompactMoney(total) }}</span>
-              </div>
-            </div>
-
             <div class="trust-badges">
               <div class="badge-item">
                 <svg width="20" height="20" fill="none" stroke="#10b981" viewBox="0 0 24 24" aria-hidden="true">
@@ -526,22 +621,20 @@ onUnmounted(() => {
               </div>
             </div>
           </aside>
+
+          <div class="checkout-side-payment">
+            <div class="footer-info">
+              <span class="footer-count">{{ totalTickets }} {{ totalTickets === 1 ? 'elemento' : 'elementos' }}</span>
+              <span class="footer-total">S/{{ formatCompactMoney(total) }}</span>
+            </div>
+
+            <button class="btn-next" type="button" :disabled="paymentDisabled" @click="checkoutStep === 'summary' ? startPayment() : continueToSummary()">
+              {{ loading ? 'Procesando...' : (checkoutStep === 'summary' ? 'Pagar' : 'Continuar') }}
+            </button>
+          </div>
         </section>
       </div>
     </main>
-
-    <footer class="checkout-footer">
-      <div class="checkout-footer-inner">
-        <div class="footer-info">
-          <span class="footer-count">{{ totalTickets }} {{ totalTickets === 1 ? 'elemento' : 'elementos' }}</span>
-          <span class="footer-total">S/{{ formatCompactMoney(total) }}</span>
-        </div>
-
-        <button class="btn-next" type="button" :disabled="paymentDisabled" @click="startPayment">
-          {{ loading ? 'Procesando...' : 'Pagar' }}
-        </button>
-      </div>
-    </footer>
   </div>
 </template>
 
