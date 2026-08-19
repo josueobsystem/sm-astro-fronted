@@ -28,34 +28,6 @@ const isYapePayment = computed(() => {
 
   return Boolean(transaction.value?.yape_id) || /yape/i.test(method);
 });
-const paymentMethodLabel = computed(() => {
-  if (isYapePayment.value) {
-    return 'Yape';
-  }
-
-  const selectedMethod = `${transaction.value?.payment_method || ''}`.trim().toLowerCase();
-  const brand = transaction.value?.brand?.trim();
-  if (brand) {
-    const normalizedBrand = brand.toUpperCase();
-    if (['card', 'card_local', 'card_intl'].includes(selectedMethod) && normalizedBrand.includes('YAPE')) {
-      return 'Tarjeta';
-    }
-
-    const brandLabels: Record<string, string> = {
-      VISA: 'Visa',
-      MASTERCARD: 'Mastercard',
-      'AMERICAN EXPRESS': 'American Express',
-      AMEX: 'American Express',
-      DINERS: 'Diners Club',
-      'DINERS CLUB': 'Diners Club',
-    };
-
-    return brandLabels[normalizedBrand] || brand;
-  }
-
-  return transaction.value?.payment_method ? 'Tarjeta' : null;
-});
-
 function pick(ticket: CheckoutTicket, keys: Array<keyof CheckoutTicket>, fallback = '-') {
   for (const key of keys) {
     const value = ticket[key];
@@ -134,17 +106,9 @@ function transactionAmount(value: number | string | null | undefined, currency: 
               <dt>Fecha y hora del pedido</dt>
               <dd>{{ transactionDate(transaction.transaction_date) }}</dd>
             </div>
-            <div v-if="paymentMethodLabel">
-              <dt>Medio de pago</dt>
-              <dd>{{ paymentMethodLabel }}</dd>
-            </div>
             <div v-if="isYapePayment && transaction?.yape_id">
               <dt>Operación Yape</dt>
               <dd>{{ transaction.yape_id }}</dd>
-            </div>
-            <div v-else-if="transaction?.card">
-              <dt>Tarjeta</dt>
-              <dd>{{ transaction.card }}</dd>
             </div>
           </dl>
 
@@ -211,17 +175,9 @@ function transactionAmount(value: number | string | null | undefined, currency: 
               <dt>Producto(s)</dt>
               <dd>{{ transaction.product_description }}</dd>
             </div>
-            <div v-if="paymentMethodLabel">
-              <dt>Medio de pago</dt>
-              <dd>{{ paymentMethodLabel }}</dd>
-            </div>
             <div v-if="isYapePayment && transaction?.yape_id">
               <dt>Operación Yape</dt>
               <dd>{{ transaction.yape_id }}</dd>
-            </div>
-            <div v-else-if="transaction?.card">
-              <dt>Tarjeta</dt>
-              <dd>{{ transaction.card }}</dd>
             </div>
           </dl>
 
