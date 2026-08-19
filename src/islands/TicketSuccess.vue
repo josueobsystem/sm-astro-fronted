@@ -90,7 +90,7 @@ function transactionAmount(value: number | string | null | undefined, currency: 
           <div>
             <p class="checkout-result-ticket__label">Resultado de la transacción</p>
             <h2>No pudimos aprobar tu pago.</h2>
-            <p>{{ transaction?.action_description || payload.error?.message }}</p>
+            <p>No se realizó ningún cargo. Puedes intentar nuevamente con otro medio de pago.</p>
           </div>
         </div>
 
@@ -147,7 +147,7 @@ function transactionAmount(value: number | string | null | undefined, currency: 
           <div>
             <p class="checkout-result-ticket__label">Resultado de la transacción</p>
             <h2>Tu compra fue confirmada.</h2>
-            <p>{{ transaction?.action_description || 'Pago aprobado y procesado correctamente.' }}</p>
+            <p>Pago aprobado y procesado correctamente.</p>
           </div>
         </div>
 
