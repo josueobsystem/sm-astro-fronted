@@ -1384,9 +1384,20 @@ select {
   overflow: visible;
   margin: 0 auto;
   border: 0;
-  border-radius: 28px;
+  border-radius: 28px 28px 0 0;
   background: #fff;
   box-shadow: 0 24px 54px rgba(var(--color-neutral-900-rgb), 0.14);
+}
+
+.checkout-result-ticket::after {
+  position: absolute;
+  right: 0;
+  bottom: -13px;
+  left: 0;
+  height: 14px;
+  content: '';
+  pointer-events: none;
+  background: radial-gradient(circle at 13px 0, transparent 0 11.5px, #fff 12px) 50% 0 / 26px 14px repeat-x;
 }
 
 .checkout-result-ticket__tear::before,
@@ -1586,17 +1597,6 @@ select {
   color: var(--color-neutral-500);
   font-size: 0.78rem;
   font-weight: 750;
-}
-
-.checkout-result-ticket__footer::after {
-  position: absolute;
-  right: 0;
-  bottom: -13px;
-  left: 0;
-  height: 13px;
-  content: '';
-  pointer-events: none;
-  background: radial-gradient(circle at 13px 0, var(--color-neutral-50) 0 12px, transparent 12.5px) 0 0 / 26px 13px repeat-x;
 }
 
 .site-footer {
