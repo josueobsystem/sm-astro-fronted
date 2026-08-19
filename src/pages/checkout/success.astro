@@ -3,12 +3,25 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import TicketSuccess from '@/islands/TicketSuccess.vue';
 import { apiGet } from '@/lib/api';
 import { getApiBaseUrl } from '@/lib/config';
-import type { CheckoutSuccessPayload } from '@/types/api';
+import type { CheckoutSuccessPayload, CheckoutTransaction } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
 const search = Object.fromEntries(Astro.url.searchParams);
 const result = await apiGet<CheckoutSuccessPayload>('/api/orders/checkout/success', env, search);
-const payload = result.ok
+const paymentMessage = Astro.url.searchParams.get('payment_message');
+const paymentStatus = Astro.url.searchParams.get('payment_status');
+const paymentWasDenied = Boolean(paymentMessage) && !/^(authorized|approved)$/i.test(paymentStatus || '');
+const paymentTransaction: CheckoutTransaction | null = paymentMessage ? {
+  status: paymentStatus || 'denied',
+  purchase_number: Astro.url.searchParams.get('purchase_number'),
+  transaction_date: Astro.url.searchParams.get('payment_transaction_date'),
+  amount: Astro.url.searchParams.get('payment_amount'),
+  currency: Astro.url.searchParams.get('payment_currency'),
+  card: Astro.url.searchParams.get('payment_card'),
+  brand: Astro.url.searchParams.get('payment_brand'),
+  action_description: paymentMessage,
+} : null;
+const resultPayload = result.ok
   ? result.data
   : {
       order: null,
@@ -21,6 +34,17 @@ const payload = result.ok
         reference: null,
       },
     };
+const payload: CheckoutSuccessPayload = paymentWasDenied
+  ? {
+      ...resultPayload,
+      error: {
+        message: paymentMessage || resultPayload.error?.message || 'El pago fue denegado.',
+        code: paymentStatus || resultPayload.error?.code || 'PAYMENT_DENIED',
+        reference: resultPayload.error?.reference || null,
+        transaction: paymentTransaction,
+      },
+    }
+  : resultPayload;
 ---
 
 <BaseLayout

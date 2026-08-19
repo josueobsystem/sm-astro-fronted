@@ -17,6 +17,7 @@ const loading = ref(false);
 const errorMessage = ref<string | null>(null);
 const isAuthenticated = ref(Boolean(props.initialAuthenticated));
 const loginModalOpen = ref(false);
+const authMode = ref<'login' | 'register'>('login');
 const isMounted = ref(false);
 
 const activeTickets = computed(() => props.tickets.filter((ticket) => {
@@ -41,6 +42,7 @@ const redirectTarget = computed(() => {
 });
 
 function openLoginModal() {
+  authMode.value = 'login';
   loginModalOpen.value = true;
 }
 
@@ -52,6 +54,10 @@ function handleLoginSuccess() {
   isAuthenticated.value = true;
   closeLoginModal();
   void reserve();
+}
+
+function changeAuthMode(mode: 'login' | 'register') {
+  authMode.value = mode;
 }
 
 function updateQuantity(ticketId: string, delta: number, max: number) {
@@ -187,24 +193,29 @@ onBeforeUnmount(() => {
     </button>
 
     <Teleport v-if="isMounted" to="body">
-      <div v-if="loginModalOpen" class="event-login-modal" role="dialog" aria-modal="true" aria-label="Iniciar sesión para continuar" @click.self="closeLoginModal">
+      <div v-if="loginModalOpen" class="event-login-modal" role="dialog" aria-modal="true" :aria-label="authMode === 'register' ? 'Crear una cuenta para continuar' : 'Iniciar sesión para continuar'" @click.self="closeLoginModal">
         <div class="event-login-modal__panel">
           <button class="event-login-modal__close" type="button" aria-label="Cerrar modal de inicio de sesión" @click="closeLoginModal">
             ×
           </button>
 
           <AuthForm
-            mode="login"
+            :key="authMode"
+            :mode="authMode"
             :api-base-url="apiBaseUrl"
             :redirect-to="redirectTarget"
             success-mode="emit"
             :inline-mode="true"
+            :allow-mode-switch="true"
             @success="handleLoginSuccess"
+            @mode-change="changeAuthMode"
           />
 
           <p class="event-login-modal__hint">
             ¿Prefieres pantalla completa?
-            <a :href="loginUrl">Ir al login</a>
+            <a :href="authMode === 'register' ? `/register?redirect=${encodeURIComponent(redirectTarget)}` : loginUrl">
+              {{ authMode === 'register' ? 'Ir al registro' : 'Ir al login' }}
+            </a>
           </p>
         </div>
       </div>

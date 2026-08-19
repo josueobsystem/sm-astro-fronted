@@ -3,12 +3,16 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import CheckoutPayment from '@/islands/CheckoutPayment.vue';
 import { apiGet } from '@/lib/api';
 import { getAuthStatus } from '@/lib/auth';
-import { getApiBaseUrl, getNiubizCheckoutUrl, getPublicSiteUrl } from '@/lib/config';
+import { getNiubizCheckoutUrl } from '@/lib/config';
 import type { CheckoutReservation, HomePayload, PublicEvent } from '@/types/api';
 import { env } from 'cloudflare:workers';
 
 const { sessionId } = Astro.params;
 const reservationId = Astro.url.searchParams.get('reservation_id');
+// El proveedor de pagos debe regresar al mismo dominio desde el que el cliente
+// abrió el checkout. No dependemos de PUBLIC_SITE_URL, que puede no estar
+// definido o apuntar a otro entorno durante el despliegue.
+const checkoutOrigin = Astro.url.origin;
 const authStatus = await getAuthStatus(Astro.request, env);
 
 if (!authStatus.authenticated) {
@@ -39,12 +43,11 @@ if (reservationResult.ok && reservationResult.data.event_id) {
 }
 ---
 
-<BaseLayout title="Checkout - Sonia Morales" description="Confirma y paga tus entradas oficiales." footer={false}>
+<BaseLayout title="Checkout - Sonia Morales" description="Confirma y paga tus entradas oficiales." chrome={false} footer={false}>
   {reservationResult.ok ? (
     <CheckoutPayment
       client:load
-      apiBaseUrl={getApiBaseUrl(env)}
-      siteUrl={getPublicSiteUrl(env)}
+      siteUrl={checkoutOrigin}
       reservation={reservationResult.data}
       event={event}
       initialContact={initialContact}

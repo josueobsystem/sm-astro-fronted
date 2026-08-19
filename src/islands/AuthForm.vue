@@ -15,15 +15,18 @@ const props = withDefaults(defineProps<{
   redirectTo?: string;
   successMode?: 'redirect' | 'emit';
   inlineMode?: boolean;
+  allowModeSwitch?: boolean;
 }>(), {
   apiBaseUrl: '',
   redirectTo: '/',
   successMode: 'redirect',
   inlineMode: false,
+  allowModeSwitch: false,
 });
 
 const emit = defineEmits<{
   (event: 'success'): void;
+  (event: 'mode-change', mode: 'login' | 'register'): void;
 }>();
 
 const email = ref('');
@@ -64,6 +67,10 @@ const googleUrl = computed(() => {
 const loginHref = computed(() => `/login?${redirectQuery.value}`);
 const registerHref = computed(() => `/register?${redirectQuery.value}`);
 const registerCityEnabled = computed(() => isRegister.value && country.value === 'PE');
+
+function changeMode(mode: 'login' | 'register') {
+  emit('mode-change', mode);
+}
 
 const normalize = (value = '') => value
   .toString()
@@ -364,14 +371,16 @@ onMounted(() => {
       <h1 class="auth-title">¡Bienvenido a Sonia Morales!</h1>
       <div class="auth-switch">
         ¿No tienes cuenta?
-        <a :href="registerHref">Regístrate aquí</a>
+        <button v-if="props.allowModeSwitch" class="auth-switch__button" type="button" @click="changeMode('register')">Regístrate aquí</button>
+        <a v-else :href="registerHref">Regístrate aquí</a>
       </div>
     </template>
 
     <template v-else>
       <div class="auth-switch">
         ¿Ya tienes cuenta?
-        <a :href="loginHref">Inicia Sesión</a>
+        <button v-if="props.allowModeSwitch" class="auth-switch__button" type="button" @click="changeMode('login')">Inicia Sesión</button>
+        <a v-else :href="loginHref">Inicia Sesión</a>
       </div>
       <h1 class="auth-title">Regístrate</h1>
       <p class="auth-subtitle" style="margin:0 0 1rem">Por favor, ingresa tus datos</p>
