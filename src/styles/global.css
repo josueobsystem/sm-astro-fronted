@@ -1510,8 +1510,7 @@ select {
   margin: 0;
 }
 
-.checkout-result-ticket__details dt,
-.checkout-result-ticket__reason span {
+.checkout-result-ticket__details dt {
   display: block;
   margin-bottom: 5px;
   color: var(--color-neutral-500);
@@ -1528,19 +1527,6 @@ select {
   font-weight: 800;
 }
 
-.checkout-result-ticket__reason {
-  margin-top: 24px;
-  padding: 16px 18px;
-  border: 0;
-  border-radius: 16px;
-  background: rgba(var(--color-success-500-rgb), 0.06);
-}
-
-.checkout-result-ticket__reason strong {
-  display: block;
-  color: var(--color-success-700);
-  line-height: 1.5;
-}
 
 .checkout-result-ticket--approved .checkout-result-ticket__status {
   color: #fff;
@@ -1561,13 +1547,6 @@ select {
   background: linear-gradient(180deg, rgba(var(--color-danger-500-rgb), 0.07), rgba(255, 255, 255, 0));
 }
 
-.checkout-result-ticket--denied .checkout-result-ticket__reason {
-  background: rgba(var(--color-danger-500-rgb), 0.06);
-}
-
-.checkout-result-ticket--denied .checkout-result-ticket__reason strong {
-  color: var(--color-danger-700);
-}
 
 .checkout-result-ticket__help {
   margin: 20px 0 0;

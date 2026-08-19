@@ -11,7 +11,6 @@ const props = defineProps<{
 
 const hasError = computed(() => Boolean(props.payload.error?.message));
 const tickets = computed(() => Array.isArray(props.payload.tickets) ? props.payload.tickets : []);
-const customerName = computed(() => props.payload.order?.customer_name || 'Cliente');
 const orderNumber = computed(() => props.payload.order?.purchase_number || props.payload.purchaseNumber || props.payload.order?.id?.slice(0, 8) || '-');
 const transaction = computed<CheckoutTransaction | null>(() => props.payload.transaction || props.payload.error?.transaction || null);
 const transactionCustomerName = computed(() => transaction.value?.customer_name || props.payload.order?.customer_name || null);
@@ -147,16 +146,7 @@ function transactionAmount(value: number | string | null | undefined, currency: 
               <dt>Tarjeta</dt>
               <dd>{{ transaction.card }}</dd>
             </div>
-            <div v-if="payload.error?.reference">
-              <dt>Referencia de soporte</dt>
-              <dd>{{ payload.error.reference }}</dd>
-            </div>
           </dl>
-
-          <div class="checkout-result-ticket__reason">
-            <span>Motivo reportado por la pasarela</span>
-            <strong>{{ transaction?.action_description || payload.error?.message || '-' }}</strong>
-          </div>
 
           <p class="checkout-result-ticket__help">
             No se realizó ningún cargo si el pago fue denegado. Si detectas un cobro, conserva este detalle y contáctanos.
@@ -193,7 +183,7 @@ function transactionAmount(value: number | string | null | undefined, currency: 
           <div>
             <p class="checkout-result-ticket__label">Resultado de la transacción</p>
             <h2>Tu compra fue confirmada.</h2>
-            <p>Gracias por tu compra, <strong>{{ customerName }}</strong>. Tus entradas ya están disponibles.</p>
+            <p>{{ transaction?.action_description || 'Pago aprobado y procesado correctamente.' }}</p>
           </div>
         </div>
 
@@ -234,11 +224,6 @@ function transactionAmount(value: number | string | null | undefined, currency: 
               <dd>{{ transaction.card }}</dd>
             </div>
           </dl>
-
-          <div class="checkout-result-ticket__reason">
-            <span>Confirmación de la pasarela</span>
-            <strong>{{ transaction?.action_description || 'Pago aprobado y procesado correctamente.' }}</strong>
-          </div>
 
           <p class="checkout-result-ticket__help">Conserva este comprobante como detalle de tu compra.</p>
         </div>

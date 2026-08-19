@@ -152,7 +152,6 @@ export type CheckoutSuccessPayload = {
   error?: {
     message: string;
     code: string;
-    reference?: string | null;
     reservation_id?: string | null;
     purchase_number?: string | null;
     retry_url?: string | null;

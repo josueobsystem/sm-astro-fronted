@@ -31,7 +31,6 @@ const resultPayload = result.ok
       error: (result.validations?.checkout as CheckoutSuccessPayload['error']) || {
         message: result.message,
         code: `HTTP_${result.status}`,
-        reference: null,
       },
     };
 const payload: CheckoutSuccessPayload = paymentWasDenied
@@ -40,7 +39,6 @@ const payload: CheckoutSuccessPayload = paymentWasDenied
       error: {
         message: paymentMessage || resultPayload.error?.message || 'El pago fue denegado.',
         code: paymentStatus || resultPayload.error?.code || 'PAYMENT_DENIED',
-        reference: resultPayload.error?.reference || null,
         transaction: paymentTransaction,
       },
     }
