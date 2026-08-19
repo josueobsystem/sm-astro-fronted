@@ -118,7 +118,6 @@ function transactionAmount(value: number | string | null | undefined, currency: 
         </div>
 
         <footer class="checkout-result-ticket__footer">
-          <span>Código de resultado: {{ payload.error?.code || 'PAYMENT_DENIED' }}</span>
           <div class="footer-actions">
             <a v-if="payload.error?.retry_url" class="cta-button" :href="payload.error.retry_url">Reintentar pago</a>
             <a class="ghost-button" href="/">Volver a eventos</a>
